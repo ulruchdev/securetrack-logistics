@@ -19,8 +19,8 @@ securetrack-logistics/
 └── README.md
 
 ## Documentation
-- [Vision Produit](documentation/Document_1.2_Business_Vision.md)
-- [Cahier des Charges Fonctionnel](documentation/Document_2.0_CdCF.md)
+- [Vision Produit](documentation/Document_1.2_Business_Vision.md.docx)
+- [Cahier des Charges Fonctionnel](documentation/Document_2.0_CdCF.docx)
 - [Backlog Ultra-Granulaire](documentation/SecureTrack_Backlog.md)
 
 ## Technologies
