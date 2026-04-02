@@ -2,9 +2,9 @@ name: CI/CD SecureTrack Logistics
 
 on:
   push:
-    branches: [ develop, main ]
+    branches: [ develop, main, master ]
   pull_request:
-    branches: [ develop ]
+    branches: [ develop, main ]
 
 jobs:
   build-and-test:
@@ -40,7 +40,7 @@ jobs:
         run: mvn clean verify -B --no-transfer-progress
 
       - name: CodeRabbit AI Code Review
-        uses: coderabbitai/ai-pr-reviewer@latest
+        uses: coderabbitai/ai-pr-reviewer@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -48,9 +48,14 @@ jobs:
         run: echo "Docker build ready for future services"
 
       - name: docker-compose test
+        env:
+          POSTGRES_HOST_PORT: 5433
+          POSTGRES_DB: securetrack
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
         run: |
           if [ -f docker-compose.yml ]; then
-            docker-compose up -d --build && sleep 15 && docker-compose down
+            docker compose up -d --build && sleep 15 && docker compose down
           else
             echo "docker-compose.yml not yet created → OK"
           fi

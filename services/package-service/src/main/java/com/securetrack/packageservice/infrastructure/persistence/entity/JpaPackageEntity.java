@@ -21,7 +21,7 @@ public class JpaPackageEntity {
     @Column(nullable = false, length = 500)
     private String description;
 
-    @Column(nullable = false, precision = 6, scale = 2)
+    @Column(nullable = false, columnDefinition = "DECIMAL(6,2)")
     private double weight;
 
     @Column(nullable = false)

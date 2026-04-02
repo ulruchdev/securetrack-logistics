@@ -1,18 +1,15 @@
-enable_per_line_comments: true
-
 reviews:
-  profile: chill # ou "assertive" selon votre préférence
+  profile: chill
   auto_review:
     enabled: true
     base_branches:
       - develop
       - main
-
-path_instructions:
-  - path: "**"
-    instructions: |
-      Respecter la Clean Architecture et le DDD.
-      Gestion des erreurs avec ProblemDetail RFC 7807.
-      Tests unitaires obligatoires avec un coverage > 80%.
-      Maintenir une haute Qualité du code et une évolution continue.
-      Respecter le cahier des charges et la base de code existante.
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Respecter la Clean Architecture et le DDD.
+        Gestion des erreurs avec ProblemDetail RFC 7807.
+        Tests unitaires obligatoires avec un coverage > 80%.
+        Maintenir une haute Qualité du code et une évolution continue.
+        Respecter le cahier des charges et la base de code existante.
