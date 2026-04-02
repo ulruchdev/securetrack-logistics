@@ -1,6 +1,5 @@
 reviews:
   profile: chill
-  enable_per_line_comments: true
   auto_review:
     enabled: true
     base_branches:

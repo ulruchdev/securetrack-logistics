@@ -50,6 +50,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.error(problem));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(
+            IllegalArgumentException ex, HttpServletRequest request) {
+
+        ProblemDetailResponse problem = ProblemDetailResponse.builder()
+                .type(ErrorCode.PKG_001.getType())
+                .title(ErrorCode.PKG_001.getTitle())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .detail(ex.getMessage())
+                .instance(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
+                .errorCode(ErrorCode.PKG_001.getCode())
+                .traceId(UUID.randomUUID().toString())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.badRequest().body(ApiResponse.error(problem));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(
             Exception ex, HttpServletRequest request) {
