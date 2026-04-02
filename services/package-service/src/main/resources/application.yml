@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: package-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/securetrack
+    username: postgres
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8085
+
+# Gestion des erreurs
+app:
+  error:
+    enabled: true

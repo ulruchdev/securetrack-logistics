@@ -1,0 +1,22 @@
+Issue Type,Summary,Description,Epic Name,Parent,Labels,Components,Priority
+Epic,STL-1 Core Logistics Engine,"Gestion complète des colis et des lieux - Semaines 1 et 2 (PackageService + LocationService)",,,backend,documentation,PackageService,Highest
+Story,STL-001 Enregistrer un nouveau colis,"En tant qu’Agent de saisie, je veux créer un colis pour qu’il soit pris en charge dans le système.",STL-1 Core Logistics Engine,,backend,PackageService,High
+Sub-task,Créer l'enum PackageStatus.java,"Créer l'énumération avec les statuts CREATED, IN_TRANSIT, AT_CHECKPOINT, DELIVERED, BLOCKED",,,backend,PackageService,High
+Sub-task,Créer l'entity Package.java,"Créer la classe @Entity avec tous les champs (packageId, description, weight, fragile, status, createdAt, updatedAt) + Lombok",,,backend,PackageService,High
+Sub-task,Créer PackageRepository.java,"Interface JpaRepository pour Package",,,backend,PackageService,High
+Sub-task,Créer PackageCreateRequest DTO,"DTO de création avec Bean Validation complète (@NotBlank, @Positive, etc.)",,,backend,PackageService,High
+Sub-task,Créer PackageResponse DTO,"DTO de réponse",,,backend,PackageService,High
+Sub-task,Créer PackageMapper (MapStruct),"Interface de mapping",,,backend,PackageService,High
+Sub-task,Implémenter create() dans PackageService,"Méthode @Transactional",,,backend,PackageService,High
+Sub-task,Créer PackageController + endpoint POST /api/v1/packages,"Gestion 201 Created + Location header",,,backend,PackageService,High
+Sub-task,Écrire test unitaire create_success,"JUnit 5 + Mockito",,,backend,PackageService,High
+Sub-task,Écrire test unitaire create_invalid_weight,"Cas d'erreur poids invalide",,,backend,PackageService,High
+Sub-task,Créer Dockerfile pour package-service,,,"backend,docker",PackageService,High
+Sub-task,Ajouter package-service dans docker-compose.yml,"Port 8081 + dépendance PostgreSQL",,,"backend,docker",PackageService,High
+
+Story,STL-002 Consulter un colis par ID,"En tant qu’Agent ou Superviseur, je veux récupérer les détails d’un colis par ID.",STL-1 Core Logistics Engine,,backend,PackageService,High
+Sub-task,Ajouter findById dans PackageRepository,,,backend,PackageService,High
+Sub-task,Implémenter getById dans PackageService,,,backend,PackageService,High
+Sub-task,Implémenter GET /api/v1/packages/{id} dans Controller,,,backend,PackageService,High
+Sub-task,Gérer 404 avec ProblemDetail (errorCode PKG-404),,,backend,PackageService,High
+Sub-task,Écrire 2 tests unitaires getById,,,backend,PackageService,High

@@ -1,0 +1,56 @@
+name: CI/CD SecureTrack Logistics
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: securetrack
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: GitGuardian Secret Scanning (sécurité obligatoire)
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: Maven Build & Tests (tests réels - doivent passer)
+        run: mvn clean verify -B --no-transfer-progress
+
+      - name: CodeRabbit AI Code Review
+        uses: coderabbitai/ai-pr-reviewer@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker images (préparation)
+        run: echo "Docker build ready for future services"
+
+      - name: docker-compose test
+        run: |
+          if [ -f docker-compose.yml ]; then
+            docker-compose up -d --build && sleep 15 && docker-compose down
+          else
+            echo "docker-compose.yml not yet created → OK"
+          fi
