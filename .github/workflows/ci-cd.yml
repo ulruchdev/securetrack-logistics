@@ -50,7 +50,7 @@ jobs:
       - name: docker-compose test
         run: |
           if [ -f docker-compose.yml ]; then
-            docker-compose up -d --build && sleep 15 && docker-compose down
+            docker compose up -d --build && sleep 15 && docker compose down
           else
             echo "docker-compose.yml not yet created → OK"
           fi
