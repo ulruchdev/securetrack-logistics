@@ -48,6 +48,11 @@ jobs:
         run: echo "Docker build ready for future services"
 
       - name: docker-compose test
+        env:
+          POSTGRES_HOST_PORT: 5433
+          POSTGRES_DB: securetrack
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
         run: |
           if [ -f docker-compose.yml ]; then
             docker compose up -d --build && sleep 15 && docker compose down
