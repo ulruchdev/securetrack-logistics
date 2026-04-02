@@ -2,9 +2,9 @@ name: CI/CD SecureTrack Logistics
 
 on:
   push:
-    branches: [ develop, main, master ]
-  pull_request:
     branches: [ develop, main ]
+  pull_request:
+    branches: [ develop ]
 
 jobs:
   build-and-test:
@@ -40,7 +40,7 @@ jobs:
         run: mvn clean verify -B --no-transfer-progress
 
       - name: CodeRabbit AI Code Review
-        uses: coderabbitai/ai-pr-reviewer@v2
+        uses: coderabbitai/ai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
