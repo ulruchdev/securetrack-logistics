@@ -4,6 +4,8 @@ import com.securetrack.packageservice.presentation.dto.api.ErrorCode;
 import com.securetrack.packageservice.presentation.dto.api.ProblemDetailResponse;
 import com.securetrack.packageservice.presentation.dto.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,6 +20,8 @@ import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationException(
@@ -50,11 +54,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(
             Exception ex, HttpServletRequest request) {
 
+        logger.error("Unhandled exception in handleGeneralException", ex);
+
         ProblemDetailResponse problem = ProblemDetailResponse.builder()
                 .type(ErrorCode.INTERNAL_SERVER_ERROR.getType())
                 .title(ErrorCode.INTERNAL_SERVER_ERROR.getTitle())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .detail(ex.getMessage() != null ? ex.getMessage() : ErrorCode.INTERNAL_SERVER_ERROR.getDefaultDetail())
+                .detail(ErrorCode.INTERNAL_SERVER_ERROR.getDefaultDetail())
                 .instance(request.getRequestURI())
                 .timestamp(LocalDateTime.now())
                 .errorCode(ErrorCode.INTERNAL_SERVER_ERROR.getCode())

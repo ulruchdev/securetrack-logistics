@@ -10,7 +10,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface PackagePresentationMapper {
 
-    @Mapping(target = "packageId", ignore = true)
     CreatePackageCommand toCommand(PackageCreateRequest request);
 
     PackageResponse toResponse(PackageResult result);

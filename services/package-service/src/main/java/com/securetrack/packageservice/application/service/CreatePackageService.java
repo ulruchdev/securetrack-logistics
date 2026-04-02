@@ -19,8 +19,8 @@ public class CreatePackageService implements CreatePackageUseCase {
     @Override
     public PackageResult createPackage(CreatePackageCommand command) {
         // Validate weight
-        if (command.weight() < 0) {
-            throw new IllegalArgumentException("Weight cannot be negative");
+        if (command.weight() <= 0 || command.weight() > 500) {
+            throw new IllegalArgumentException("Weight must be between 1 and 500");
         }
         
         Package packageDomain = Package.create(

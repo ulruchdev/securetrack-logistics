@@ -2,9 +2,9 @@ spring:
   application:
     name: package-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/securetrack
-    username: postgres
-    password: password
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/securetrack}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:password}
   jpa:
     hibernate:
       ddl-auto: update
