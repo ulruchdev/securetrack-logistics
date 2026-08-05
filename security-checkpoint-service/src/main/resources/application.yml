@@ -1,0 +1,38 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: security-checkpoint-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cbsdb
+    username: cbsuser
+    password: cbspassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    com.cbs.logistics.security_checkpoint_service: INFO
+    org.springframework.cloud.openfeign: DEBUG
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+        loggerLevel: basic
