@@ -1,24 +1,12 @@
-# Maven
-target/
-*.jar
-*.war
-
-# IntelliJ / VS Code
+# IntelliJ IDEA
 .idea/
-.vscode/
 *.iml
 
-# OS
-.DS_Store
-Thumbs.db
+# Maven
+target/
 
 # Logs
 *.log
 
-# Docker
-docker-compose.override.yml
-
-# Environment / secrets
-.env
-.env.*
-.env.local
+# Documentation interne client - NE JAMAIS POUSSER
+documentation/
