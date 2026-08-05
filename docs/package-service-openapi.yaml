@@ -1,0 +1,228 @@
+openapi: 3.0.3
+info:
+  title: Package Service API
+  version: 1.0.0
+  description: API pour la gestion des colis dans le système CBS Logistics
+servers:
+  - url: http://localhost:8081
+    description: Package Service
+
+paths:
+  /api/packages:
+    post:
+      summary: Créer un colis
+      description: Créer un nouveau colis dans le système
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePackageRequest'
+      responses:
+        '201':
+          description: Colis créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageDto'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: Lister les colis
+      description: Récupérer tous les colis avec pagination et tri
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            default: packageId
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Liste des colis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagePackageDto'
+
+  /api/packages/{id}:
+    get:
+      summary: Récupérer un colis
+      description: Récupérer un colis par son ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Détails du colis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageDto'
+        '404':
+          description: Colis non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: Mettre à jour un colis
+      description: Mise à jour partielle d'un colis
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePackageRequest'
+      responses:
+        '200':
+          description: Colis mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageDto'
+        '404':
+          description: Colis non trouvé
+    delete:
+      summary: Supprimer un colis
+      description: Supprimer un colis du système
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Colis supprimé avec succès
+        '404':
+          description: Colis non trouvé
+
+components:
+  schemas:
+    PackageDto:
+      type: object
+      properties:
+        packageId:
+          type: integer
+          format: int64
+        description:
+          type: string
+        packageName:
+          type: string
+        packageType:
+          type: string
+        weight:
+          type: number
+          format: double
+        fragile:
+          type: boolean
+        packageStatus:
+          $ref: '#/components/schemas/PackageStatus'
+
+    CreatePackageRequest:
+      type: object
+      required:
+        - description
+        - packageName
+        - packageType
+        - weight
+        - fragile
+      properties:
+        description:
+          type: string
+          minLength: 1
+        packageName:
+          type: string
+          minLength: 1
+        packageType:
+          type: string
+          minLength: 1
+        weight:
+          type: number
+          format: double
+          minimum: 0
+        fragile:
+          type: boolean
+
+    UpdatePackageRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        packageName:
+          type: string
+        packageType:
+          type: string
+        weight:
+          type: number
+          format: double
+          minimum: 0
+        fragile:
+          type: boolean
+        packageStatus:
+          $ref: '#/components/schemas/PackageStatus'
+
+    PackageStatus:
+      type: string
+      enum:
+        - NEW
+        - IN_TRANSIT
+        - DELIVERED
+        - LOST
+
+    PagePackageDto:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageDto'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: object
