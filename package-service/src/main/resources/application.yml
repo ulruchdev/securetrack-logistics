@@ -1,0 +1,30 @@
+server:
+  port: 8081   # Port dédié pour PackageService (évite conflit avec autres microservices)
+
+spring:
+  application:
+    name: package-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cbsdb
+    username: cbsuser
+    password: cbspassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE   # Affiche les valeurs bindées
+    com.cbs.logistics.package_service: INFO
