@@ -1,0 +1,33 @@
+server:
+  port: 8082   # Port dédié pour éviter tout conflit avec PackageService (8081)
+
+spring:
+  application:
+    name: location-service
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+
+
+  data:
+     mongodb:
+        # Notez l'espace après 'uri:' et l'ajout de authSource=admin
+        uri: mongodb://cbsuser:cbspassword@localhost:27017/cbsdb?authSource=admin
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG   # Utile pour voir les queries en dev
+    com.cbs.logistics.location_service: INFO
+    org.springframework.cloud.openfeign: DEBUG   # Pour debug Feign plus tard si besoin
+
+# Configuration Feign (optionnelle mais bonne pratique)
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+        loggerLevel: basic   # Ou 'full' pour plus de détails en dev
