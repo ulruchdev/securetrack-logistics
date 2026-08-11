@@ -10,7 +10,7 @@ Système de microservices pour la gestion de la chaîne logistique CBS : suivi d
 | **location-service** | 8082 | MongoDB (`cbsdb`) | Localisation des colis — valide l'existence du colis via Package Service |
 | **security-checkpoint-service** | 8083 | PostgreSQL (`cbsdb`) | Logs de passages sécurisés — valide la localisation via Location Service |
 
-Communication inter-services : **OpenFeign** (Package Service ← Location Service ← Security Checkpoint Service). Documentation API OpenAPI 3.0.3 disponible dans le dossier [`docs/`](../docs).
+Communication inter-services : **OpenFeign** (Package Service ← Location Service ← Security Checkpoint Service). Documentation API OpenAPI 3.0.3 disponible dans le dossier [`docs/`](docs/).
 
 ## Prérequis
 
@@ -38,9 +38,9 @@ Les bases sont exposées **uniquement en local** (`127.0.0.1`) : PostgreSQL sur 
 ```bash
 # ⚠️ DB_PASSWORD et MONGO_URI doivent correspondre aux identifiants de l'infrastructure
 #    définis dans common/.env (étape 1).
-export DB_PASSWORD="cbspassword"                       # identique à POSTGRES_PASSWORD de common/.env
-export MONGO_URI="mongodb://cbsuser:cbspassword@localhost:27017/cbsdb?authSource=admin"  # = MONGO_USER:MONGO_PASSWORD
-export SECURITY_PASSWORD="mon-secret-admin"           # mot de passe Basic Auth du checkpoint (valeur libre)
+export DB_PASSWORD="<votre-mot-de-passe>"              # identique à POSTGRES_PASSWORD de common/.env
+export MONGO_URI="mongodb://cbsuser:<votre-mot-de-passe>@localhost:27017/cbsdb?authSource=admin"  # = MONGO_USER:MONGO_PASSWORD
+export SECURITY_PASSWORD="<votre-secret-admin>"        # mot de passe Basic Auth du checkpoint (valeur libre)
 ```
 
 | Variable | Obligatoire | Sert à | Correspondance (`common/.env`) |
@@ -52,7 +52,7 @@ export SECURITY_PASSWORD="mon-secret-admin"           # mot de passe Basic Auth 
 
 ### 3. Services
 
-Depuis `project-1-logistics/` (après avoir exporté les variables ci-dessus) :
+Depuis la racine du dépôt (après avoir exporté les variables ci-dessus) :
 
 ```bash
 # Package Service (port 8081)
@@ -70,17 +70,17 @@ cd security-checkpoint-service && mvn spring-boot:run -Dspring-boot.run.profiles
 
 ## Configuration & sécurité
 
-- **Secrets obligatoires, jamais versionnés** : les mots de passe (`DB_PASSWORD`, `MONGO_URI`, `SECURITY_PASSWORD`) n'ont **plus de valeur par défaut** dans le code ni dans les `application.yml` — ils sont lus depuis l'environnement au démarrage. Un service **refuse de démarrer** si sa variable est absente. La liste complète figure dans [`common/.env.example`](../common/.env.example) (à copier vers `common/.env` pour l'infrastructure Docker ; les services, eux, lisent les variables depuis l'environnement du shell).
+- **Secrets obligatoires, jamais versionnés** : les mots de passe (`DB_PASSWORD`, `MONGO_URI`, `SECURITY_PASSWORD`) n'ont **plus de valeur par défaut** dans le code ni dans les `application.yml` — ils sont lus depuis l'environnement au démarrage. Un service **refuse de démarrer** si sa variable est absente. La liste complète figure dans [`common/.env.example`](common/.env.example) (à copier vers `common/.env` pour l'infrastructure Docker ; les services, eux, lisent les variables depuis l'environnement du shell).
 - **Security Checkpoint Service (Basic Auth)** : identifiants via variables d'environnement `SECURITY_USERNAME` (défaut local `admin`) et `SECURITY_PASSWORD` (**obligatoire**).
 - **HTTPS** : en production, activer `SECURITY_REQUIRE_HTTPS=true` pour exiger un canal sécurisé sur les endpoints protégés.
-- **En production** : définir des mots de passe forts et uniques — les valeurs de dev documentées ici ne servent qu'en local.
+- **En production** : définir des mots de passe forts et uniques — **aucune valeur n'est codée en dur dans le dépôt** ; les identifiants se configurent via `common/.env` (infrastructure) et les variables d'environnement (services).
 
 > 🔧 **Dépannage** : si un service échoue au démarrage avec `password authentication failed` (PostgreSQL) ou une erreur de connexion MongoDB, c'est que la variable correspondante est absente ou ne correspond pas aux identifiants de l'infrastructure Docker — pas un bug de code.
 
 ## Tests
 
 ```bash
-cd project-1-logistics/parent && mvn test
+cd parent && mvn test
 ```
 
 ## Documentation API

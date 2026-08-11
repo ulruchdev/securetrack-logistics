@@ -14,7 +14,7 @@ services:
       - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-cbsuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cbspassword}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est requis (copier common/.env.example vers common/.env)}
       POSTGRES_DB: ${POSTGRES_DB:-cbsdb}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -25,7 +25,7 @@ services:
     container_name: cbs-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-cbsuser}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-cbspassword}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD est requis (copier common/.env.example vers common/.env)}
     ports:
       - "127.0.0.1:27017:27017"
     volumes:

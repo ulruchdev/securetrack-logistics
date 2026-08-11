@@ -21,13 +21,13 @@ Le Security Checkpoint Service est un microservice RESTful responsable du contr√
 
 2. **D√©marrer le Location Service :**
    ```bash
-   cd project-1-logistics/location-service
+   cd location-service
    mvn spring-boot:run
    ```
 
 3. **Lancer l'application :**
    ```bash
-   cd project-1-logistics/security-checkpoint-service
+   cd security-checkpoint-service
    mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 

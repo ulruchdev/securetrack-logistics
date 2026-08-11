@@ -10,7 +10,8 @@ BASE_LOC="${BASE_LOC:-http://localhost:8082}"
 BASE_CHK="${BASE_CHK:-http://localhost:8083}"
 
 AUTH_USER="${AUTH_USER:-admin}"
-AUTH_PASS="${AUTH_PASS:-secret123}"
+# AUTH_PASS est OBLIGATOIRE pour les appels authentifiés :
+# aucune valeur par défaut n'est codée en dur (vérifié dans req_auth).
 
 # --- Compteurs globaux ---
 PASS=0
@@ -46,6 +47,11 @@ req() { # req <method> <url> <data JSON ou vide>
 
 req_auth() { # req_auth <method> <url> <data JSON ou vide>  (Basic Auth)
   local method="$1" url="$2" data="${3:-}"
+  if [ -z "${AUTH_PASS:-}" ]; then
+    echo "ERREUR : AUTH_PASS n'est pas defini (mot de passe Basic Auth du checkpoint)." >&2
+    echo "         Exportez-le avant de lancer le script : export AUTH_PASS=<mot-de-passe>" >&2
+    exit 1
+  fi
   if [ -n "$data" ]; then
     curl -s -w '\n%{http_code}' -X "$method" "$url" -u "$AUTH_USER:$AUTH_PASS" -H 'Content-Type: application/json' -d "$data"
   else
