@@ -18,7 +18,7 @@ Ce dossier contient les spécifications OpenAPI 3.0.3 pour tous les microservice
 - **Fichier**: `security-checkpoint-service-openapi.yaml`
 - **Description**: Traçabilité sécurisée des passages aux checkpoints
 - **Fonctionnalités**: Enregistrement et consultation des logs de passage
-- **Sécurité**: Basic Authentication (admin:secret123)
+- **Sécurité**: Basic Authentication (identifiants via variables d'environnement)
 
 ## Utilisation
 
@@ -42,7 +42,7 @@ swagger-codegen validate -i package-service-openapi.yaml
 
 ## Architecture Inter-Services
 
-```
+```text
 Package Service (8081) ←→ Location Service (8082) ←→ Security Checkpoint Service (8083)
 ```
 

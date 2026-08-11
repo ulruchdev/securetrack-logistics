@@ -28,9 +28,9 @@ paths:
         '400':
           description: Erreur de validation
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ProblemDetail'
     get:
       summary: Lister les colis
       description: Récupérer tous les colis avec pagination et tri
@@ -85,9 +85,9 @@ paths:
         '404':
           description: Colis non trouvé
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ProblemDetail'
     patch:
       summary: Mettre à jour un colis
       description: Mise à jour partielle d'un colis
@@ -113,6 +113,10 @@ paths:
                 $ref: '#/components/schemas/PackageDto'
         '404':
           description: Colis non trouvé
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     delete:
       summary: Supprimer un colis
       description: Supprimer un colis du système
@@ -128,6 +132,10 @@ paths:
           description: Colis supprimé avec succès
         '404':
           description: Colis non trouvé
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
 components:
   schemas:
@@ -219,10 +227,23 @@ components:
         number:
           type: integer
 
-    ErrorResponse:
+    ProblemDetail:
       type: object
+      description: Réponse d'erreur au format RFC 7807 (application/problem+json)
       properties:
-        error:
+        type:
           type: string
-        details:
-          type: object
+          description: URI identifiant le type de problème (about:blank si non spécifié)
+        title:
+          type: string
+          description: Titre court et lisible du problème
+        status:
+          type: integer
+          format: int32
+          description: Code de statut HTTP
+        detail:
+          type: string
+          description: Explication détaillée du problème
+        instance:
+          type: string
+          description: URI de l'instance concernée
