@@ -15,6 +15,10 @@
 
     <modules>
         <module>services/package-service</module>
+        <!-- Modules CBS Logistics importés (correctifs du rapport appliqués) -->
+        <module>package-service</module>
+        <module>location-service</module>
+        <module>security-checkpoint-service</module>
     </modules>
 
     <properties>
