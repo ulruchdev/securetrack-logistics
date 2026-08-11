@@ -1,14 +1,14 @@
 server:
-  port: 8081   # Port dédié pour PackageService (évite conflit avec autres microservices)
+  port: 8081
 
 spring:
   application:
     name: package-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/cbsdb
-    username: cbsuser
-    password: cbspassword
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/cbsdb}
+    username: ${DB_USERNAME:cbsuser}
+    password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable DB_PASSWORD
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:

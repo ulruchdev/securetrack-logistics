@@ -25,6 +25,7 @@ public class Package {
     private Double weight;
     @Column
     private boolean fragile;
+    @Enumerated(EnumType.STRING)
     @Column
     private PackageStatus packageStatus;
     @Column
