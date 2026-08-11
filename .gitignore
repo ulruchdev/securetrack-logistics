@@ -39,3 +39,6 @@ docker-compose.override.yml
 *.h2.db
 *.mv.db
 *.trace.db
+
+# ===== Documentation interne client (NE JAMAIS POUSSER) =====
+project-1-logistics/documentation/
