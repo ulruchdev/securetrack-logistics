@@ -8,6 +8,8 @@ import com.cbs.logistics.package_service.entity.PackageStatus;
 import com.cbs.logistics.package_service.exception.PackageNotFoundException;
 import com.cbs.logistics.package_service.mapper.PackageMapper;
 import com.cbs.logistics.package_service.repository.PackageRepository;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +40,8 @@ class PackageServiceTest {
 
     @InjectMocks
     private PackageService packageService;
+
+    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     private Package packageEntity;
     private PackageDto packageDto;
@@ -81,14 +85,18 @@ class PackageServiceTest {
     }
 
     @Test
-    void create_ShouldThrowException_WhenDescriptionIsInvalid() {
+    void createRequest_ShouldRejectBlankDescription_WhenValidated() {
         // Given
         createRequest.setDescription("");
 
-        // When & Then
-        assertThatThrownBy(() -> packageService.create(createRequest))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Description cannot be null or empty");
+        // When
+        var violations = validator.validate(createRequest);
+
+        // Then
+        assertThat(violations).isNotEmpty();
+        assertThat(violations).anyMatch(v ->
+                v.getPropertyPath().toString().equals("description")
+                        && v.getMessage().equals("La description est obligatoire"));
     }
 
     @Test
@@ -97,6 +105,17 @@ class PackageServiceTest {
         when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
+
+        // Le mapper étant mocké, on simule sa vraie mutation :
+        // il applique les champs non-null du request sur l'entité
+        doAnswer(invocation -> {
+            UpdatePackageRequest req = invocation.getArgument(0);
+            Package entity = invocation.getArgument(1);
+            if (req.getPackageStatus() != null) {
+                entity.setPackageStatus(req.getPackageStatus());
+            }
+            return null;
+        }).when(packageMapper).updateEntityFromRequest(any(UpdatePackageRequest.class), any(Package.class));
 
         // When
         PackageDto result = packageService.update(1L, updateRequest);

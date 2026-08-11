@@ -1,26 +1,26 @@
+# ============================================================
+#  CBS Logistics API - Spec combinée (FICHIER GÉNÉRÉ - ne pas éditer à la main)
+#
+#  Sources : package-service-openapi.yaml, location-service-openapi.yaml,
+#            security-checkpoint-service-openapi.yaml
+#  Régénération : python3 docs/generate-combined-openapi.py
+# ============================================================
 openapi: 3.0.3
 info:
   title: CBS Logistics API
   version: 1.0.0
-  description: API combinée pour le système CBS Logistics incluant Location Service, Package Service et Security Checkpoint Service
-
+  description: API combinée pour le système CBS Logistics incluant Package Service, Location Service et Security Checkpoint
+    Service.
 servers:
-  - url: http://localhost:8081
-    description: Package Service
-  - url: http://localhost:8082
-    description: Location Service
-  - url: http://localhost:8083
-    description: Security Checkpoint Service
-
-security:
-  - basicAuth: []
-
+- url: http://localhost:8081
+  description: Package Service
+- url: http://localhost:8082
+  description: Location Service
+- url: http://localhost:8083
+  description: Security Checkpoint Service
 paths:
-  # Package Service paths
   /api/packages:
     post:
-      tags:
-        - Package Service
       summary: Créer un colis
       description: Créer un nouveau colis dans le système
       requestBody:
@@ -39,36 +39,41 @@ paths:
         '400':
           description: Erreur de validation
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    get:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8081
+        description: Package Service
       tags:
-        - Package Service
+      - Package Service
+    get:
       summary: Lister les colis
       description: Récupérer tous les colis avec pagination et tri
       parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 10
-        - name: sortBy
-          in: query
-          schema:
-            type: string
-            default: packageId
-        - name: sortDir
-          in: query
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          default: 10
+      - name: sortBy
+        in: query
+        schema:
+          type: string
+          default: packageId
+      - name: sortDir
+        in: query
+        schema:
+          type: string
+          enum:
+          - asc
+          - desc
+          default: asc
       responses:
         '200':
           description: Liste des colis
@@ -76,20 +81,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PagePackageDto'
-
+      servers:
+      - url: http://localhost:8081
+        description: Package Service
+      tags:
+      - Package Service
   /api/packages/{id}:
     get:
-      tags:
-        - Package Service
       summary: Récupérer un colis
       description: Récupérer un colis par son ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       responses:
         '200':
           description: Détails du colis
@@ -100,21 +107,24 @@ paths:
         '404':
           description: Colis non trouvé
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    patch:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8081
+        description: Package Service
       tags:
-        - Package Service
+      - Package Service
+    patch:
       summary: Mettre à jour un colis
       description: Mise à jour partielle d'un colis
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -130,29 +140,41 @@ paths:
                 $ref: '#/components/schemas/PackageDto'
         '404':
           description: Colis non trouvé
-    delete:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8081
+        description: Package Service
       tags:
-        - Package Service
+      - Package Service
+    delete:
       summary: Supprimer un colis
       description: Supprimer un colis du système
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       responses:
         '204':
           description: Colis supprimé avec succès
         '404':
           description: Colis non trouvé
-
-  # Location Service paths
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8081
+        description: Package Service
+      tags:
+      - Package Service
   /api/locations:
     post:
-      tags:
-        - Location Service
       summary: Créer une location
       description: Créer un nouvel emplacement logistique
       requestBody:
@@ -171,27 +193,34 @@ paths:
         '400':
           description: Erreur de validation
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ProblemDetail'
         '503':
           description: Service externe indisponible
-    get:
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8082
+        description: Location Service
       tags:
-        - Location Service
+      - Location Service
+    get:
       summary: Lister les locations
       description: Récupérer toutes les locations avec pagination
       parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 20
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          default: 20
       responses:
         '200':
           description: Liste des locations
@@ -199,19 +228,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageLocationDto'
-
+      servers:
+      - url: http://localhost:8082
+        description: Location Service
+      tags:
+      - Location Service
   /api/locations/{id}:
     get:
-      tags:
-        - Location Service
       summary: Récupérer une location
       description: Récupérer une location par son ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: Détails de la location
@@ -222,23 +253,25 @@ paths:
         '404':
           description: Location non trouvée
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8082
+        description: Location Service
+      tags:
+      - Location Service
   /api/locations/by-package/{packageId}:
     get:
-      tags:
-        - Location Service
       summary: Location enrichie par colis
       description: Récupérer une location avec les informations du colis associé
       parameters:
-        - name: packageId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      - name: packageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       responses:
         '200':
           description: Location avec informations du colis
@@ -248,16 +281,28 @@ paths:
                 $ref: '#/components/schemas/EnrichedLocationDto'
         '404':
           description: Location non trouvée pour ce colis
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '503':
           description: Service externe indisponible
-
-  # Security Checkpoint Service paths
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8082
+        description: Location Service
+      tags:
+      - Location Service
   /api/checkpoints:
     post:
-      tags:
-        - Security Checkpoint Service
       summary: Enregistrer un passage
       description: Créer un nouveau log de passage de colis au checkpoint
+      tags:
+      - Security Checkpoint Service
+      - Checkpoint Logs
       requestBody:
         required: true
         content:
@@ -274,27 +319,49 @@ paths:
         '400':
           description: Erreur de validation
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Localisation non trouvée
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Checkpoint non disponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '503':
           description: Service externe indisponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8083
+        description: Security Checkpoint Service
+      security: &id001
+      - basicAuth: []
     get:
-      tags:
-        - Security Checkpoint Service
       summary: Lister les logs
       description: Lister tous les passages avec pagination
+      tags:
+      - Security Checkpoint Service
+      - Checkpoint Logs
       parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 20
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          default: 20
       responses:
         '200':
           description: Liste des logs de checkpoint
@@ -302,20 +369,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageCheckpointLogDto'
-
+      servers:
+      - url: http://localhost:8083
+        description: Security Checkpoint Service
+      security: *id001
   /api/checkpoints/{id}:
     get:
-      tags:
-        - Security Checkpoint Service
       summary: Consulter un log
       description: Récupérer les détails d'un passage spécifique
+      tags:
+      - Security Checkpoint Service
+      - Checkpoint Logs
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       responses:
         '200':
           description: Détails du log de checkpoint
@@ -326,44 +397,51 @@ paths:
         '404':
           description: Log de checkpoint non trouvé
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8083
+        description: Security Checkpoint Service
+      security: *id001
   /api/checkpoints/by-package/{packageId}:
     get:
-      tags:
-        - Security Checkpoint Service
       summary: Logs par colis
       description: Voir tous les checkpoints par lesquels un colis est passé (traçabilité)
+      tags:
+      - Security Checkpoint Service
+      - Checkpoint Logs
       parameters:
-        - name: packageId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      - name: packageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
       responses:
         '200':
-          description: Historique des passages du colis
+          description: Historique des passages du colis (paginé)
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CheckpointLogDto'
+                $ref: '#/components/schemas/PageCheckpointLogDto'
         '404':
           description: Aucun passage trouvé pour ce colis
-
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8083
+        description: Security Checkpoint Service
+      security: *id001
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
-      description: "Utilisateur: admin, Mot de passe: secret123"
-
+      description: Basic Authentication (identifiants via variables d'environnement)
   schemas:
-    # Package Service schemas
     PackageDto:
       type: object
       properties:
@@ -383,15 +461,14 @@ components:
           type: boolean
         packageStatus:
           $ref: '#/components/schemas/PackageStatus'
-
     CreatePackageRequest:
       type: object
       required:
-        - description
-        - packageName
-        - packageType
-        - weight
-        - fragile
+      - description
+      - packageName
+      - packageType
+      - weight
+      - fragile
       properties:
         description:
           type: string
@@ -408,7 +485,6 @@ components:
           minimum: 0
         fragile:
           type: boolean
-
     UpdatePackageRequest:
       type: object
       properties:
@@ -426,15 +502,13 @@ components:
           type: boolean
         packageStatus:
           $ref: '#/components/schemas/PackageStatus'
-
     PackageStatus:
       type: string
       enum:
-        - NEW
-        - IN_TRANSIT
-        - DELIVERED
-        - LOST
-
+      - NEW
+      - IN_TRANSIT
+      - DELIVERED
+      - LOST
     PagePackageDto:
       type: object
       properties:
@@ -451,25 +525,47 @@ components:
           type: integer
         number:
           type: integer
-
-    # Location Service schemas
+    ProblemDetail:
+      type: object
+      description: Réponse d'erreur au format RFC 7807 (application/problem+json)
+      properties:
+        type:
+          type: string
+          description: URI identifiant le type de problème (about:blank si non spécifié)
+        title:
+          type: string
+          description: Titre court et lisible du problème
+        status:
+          type: integer
+          format: int32
+          description: Code de statut HTTP
+        detail:
+          type: string
+          description: Explication détaillée du problème
+        instance:
+          type: string
+          description: URI de l'instance concernée
     LocationDto:
       type: object
       properties:
+        locationId:
+          type: string
+        packageId:
+          type: integer
+          format: int64
         city:
           type: string
         zone:
           type: string
         checkpointAvailable:
           type: boolean
-
     CreateLocationRequest:
       type: object
       required:
-        - city
-        - zone
-        - checkpointAvailable
-        - packageId
+      - city
+      - zone
+      - checkpointAvailable
+      - packageId
       properties:
         city:
           type: string
@@ -482,7 +578,6 @@ components:
         packageId:
           type: integer
           format: int64
-
     EnrichedLocationDto:
       type: object
       properties:
@@ -490,7 +585,6 @@ components:
           $ref: '#/components/schemas/LocationDto'
         packageInfo:
           $ref: '#/components/schemas/PackageInfo'
-
     PackageInfo:
       type: object
       properties:
@@ -511,11 +605,10 @@ components:
         packageStatus:
           type: string
           enum:
-            - NEW
-            - IN_TRANSIT
-            - DELIVERED
-            - LOST
-
+          - NEW
+          - IN_TRANSIT
+          - DELIVERED
+          - LOST
     PageLocationDto:
       type: object
       properties:
@@ -532,8 +625,6 @@ components:
           type: integer
         number:
           type: integer
-
-    # Security Checkpoint Service schemas
     CheckpointLogDto:
       type: object
       properties:
@@ -554,14 +645,13 @@ components:
           type: string
         createdBy:
           type: string
-
     CreateCheckpointRequest:
       type: object
       required:
-        - packageId
-        - locationId
-        - result
-        - createdBy
+      - packageId
+      - locationId
+      - result
+      - createdBy
       properties:
         packageId:
           type: integer
@@ -572,7 +662,7 @@ components:
         checkpointTime:
           type: string
           format: date-time
-          description: "Optionnel, auto-généré si non fourni"
+          description: Optionnel, auto-généré si non fourni
         result:
           $ref: '#/components/schemas/CheckpointResult'
         comment:
@@ -580,21 +670,24 @@ components:
         createdBy:
           type: string
           minLength: 1
-
     CheckpointResult:
       type: string
       enum:
-        - OK
-        - REFUSED
-        - ALERT
-        - PENDING
-      description: |
-        Résultats possibles:
+      - OK
+      - REFUSED
+      - ALERT
+      - PENDING
+      description: 'Résultats possibles:
+
         * OK - Contrôle réussi
+
         * REFUSED - Colis refusé
+
         * ALERT - Alerte détectée
+
         * PENDING - En attente de validation
 
+        '
     PageCheckpointLogDto:
       type: object
       properties:
@@ -611,12 +704,3 @@ components:
           type: integer
         number:
           type: integer
-
-    # Common schemas
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        details:
-          type: object

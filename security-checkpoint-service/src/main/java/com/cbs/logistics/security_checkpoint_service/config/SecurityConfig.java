@@ -1,5 +1,6 @@
 package com.cbs.logistics.security_checkpoint_service.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -26,6 +27,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(Customizer.withDefaults());
 
+        // Exiger HTTPS sur les endpoints protégés (actif en production uniquement)
+        if (requireHttps) {
+            http.requiresChannel(channel -> channel.anyRequest().requiresSecure());
+        }
+
         return http.build();
     }
 
@@ -34,11 +40,23 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /** Nom d'utilisateur du compte d'administration (surchargeable via l'environnement). */
+    @Value("${security.checkpoint.username:admin}")
+    private String username;
+
+    /** Mot de passe OBLIGATOIRE (le service refuse de démarrer si SECURITY_PASSWORD n'est pas définie). */
+    @Value("${security.checkpoint.password}")
+    private String password;
+
+    /** Exiger HTTPS sur les endpoints protégés (true en production, false en dev local). */
+    @Value("${security.checkpoint.require-https:false}")
+    private boolean requireHttps;
+
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
         UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder().encode("secret123"))
+                .username(username)
+                .password(passwordEncoder().encode(password))
                 .roles("CHECKPOINT_OPERATOR")
                 .build();
 

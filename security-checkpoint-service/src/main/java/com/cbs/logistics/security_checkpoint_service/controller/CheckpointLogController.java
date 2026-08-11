@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/checkpoints")
@@ -51,9 +50,9 @@ public class CheckpointLogController {
     }
 
     @GetMapping("/by-package/{packageId}")
-    @Operation(summary = "Logs par colis", description = "Voir tous les checkpoints par lesquels un colis est passé")
-    public ResponseEntity<List<CheckpointLogDto>> getCheckpointLogsByPackageId(@PathVariable Long packageId) {
-        List<CheckpointLogDto> logs = service.getByPackageId(packageId);
+    @Operation(summary = "Logs par colis", description = "Voir les checkpoints par lesquels un colis est passé (paginé)")
+    public ResponseEntity<Page<CheckpointLogDto>> getCheckpointLogsByPackageId(@PathVariable Long packageId, Pageable pageable) {
+        Page<CheckpointLogDto> logs = service.getByPackageId(packageId, pageable);
         return ResponseEntity.ok(logs);
     }
 }

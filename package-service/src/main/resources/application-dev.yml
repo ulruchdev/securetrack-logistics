@@ -1,0 +1,6 @@
+# Profil dev local : Hibernate peut créer/mettre à jour le schéma automatiquement.
+# Lancement : SPRING_PROFILES_ACTIVE=dev (ou -Dspring-boot.run.profiles=dev)
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
