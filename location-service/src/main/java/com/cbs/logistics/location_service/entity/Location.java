@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "locations")
@@ -18,6 +19,7 @@ public class Location {
     @Id
     private String locationId;
 
+    @Indexed(unique = true)
     private Long packageId;
 
     private String city;

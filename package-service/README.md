@@ -21,8 +21,11 @@ Le Package Service est un microservice RESTful responsable de la gestion complè
 2. **Lancer l'application :**
    ```bash
    cd project-1-logistics/package-service
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
+
+> 💡 **Profil dev** : sans profil, le schéma BDD est en `validate` (vérifié, jamais modifié).
+> Le profil `dev` permet à Hibernate de créer/mettre à jour le schéma automatiquement.
 
 L'application sera accessible sur `http://localhost:8081`.
 

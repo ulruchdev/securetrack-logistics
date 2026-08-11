@@ -23,7 +23,7 @@ public class UpdatePackageRequest {
 
     private String packageType;
 
-    @PositiveOrZero(message = "Weight must be positive or zero")
+    @PositiveOrZero(message = "Le poids doit être positif ou nul")
     private Double weight;
 
     private Boolean fragile;

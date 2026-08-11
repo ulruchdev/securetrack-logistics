@@ -1,5 +1,5 @@
 server:
-  port: 8082   # Port dédié pour éviter tout conflit avec PackageService (8081)
+  port: 8082
 
 spring:
   application:
@@ -15,7 +15,7 @@ spring:
   data:
      mongodb:
         # Notez l'espace après 'uri:' et l'ajout de authSource=admin
-        uri: mongodb://cbsuser:cbspassword@localhost:27017/cbsdb?authSource=admin
+        uri: ${MONGO_URI}   # OBLIGATOIRE : ex. mongodb://cbsuser:<mot-de-passe>@localhost:27017/cbsdb?authSource=admin
 
 logging:
   level:
@@ -31,3 +31,7 @@ feign:
         connectTimeout: 5000
         readTimeout: 10000
         loggerLevel: basic   # Ou 'full' pour plus de détails en dev
+
+# URL du Package Service (surchargeable par variable d'environnement PACKAGE_SERVICE_URL)
+package-service:
+  url: ${PACKAGE_SERVICE_URL:http://localhost:8081}

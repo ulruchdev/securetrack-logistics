@@ -28,17 +28,26 @@ Le Security Checkpoint Service est un microservice RESTful responsable du contr�
 3. **Lancer l'application :**
    ```bash
    cd project-1-logistics/security-checkpoint-service
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
+
+> 💡 **Profil dev** : sans profil, le schéma BDD est en `validate` (vérifié, jamais modifié).
+> Le profil `dev` permet à Hibernate de créer/mettre à jour le schéma automatiquement.
 
 L'application sera accessible sur `http://localhost:8083`.
 
 ## Sécurité
 
-Le service utilise **Basic Authentication** :
-- **Utilisateur** : `admin`
-- **Mot de passe** : `secret123`
+Le service utilise **Basic Authentication** avec des identifiants fournis par **variables d'environnement** (jamais versionnés) :
+- `AUTH_USER` : nom d'utilisateur (ex. `admin`)
+- `AUTH_PASS` : mot de passe sécurisé
 - **Rôle** : `CHECKPOINT_OPERATOR`
+
+Exportez ces variables avant d'exécuter les commandes :
+```bash
+export AUTH_USER=admin
+export AUTH_PASS=votre-mot-de-passe
+```
 
 ## Endpoints API
 

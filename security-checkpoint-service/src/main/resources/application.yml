@@ -6,9 +6,9 @@ spring:
     name: security-checkpoint-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/cbsdb
-    username: cbsuser
-    password: cbspassword
+    url: jdbc:postgresql://localhost:5433/cbsdb
+    username: ${DB_USERNAME:cbsuser}
+    password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable DB_PASSWORD
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -36,3 +36,14 @@ feign:
         connectTimeout: 5000
         readTimeout: 10000
         loggerLevel: basic
+
+# Identifiants du compte d'administration (surchargables via variables d'environnement)
+security:
+  checkpoint:
+    username: ${SECURITY_USERNAME:admin}
+    password: ${SECURITY_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable SECURITY_PASSWORD
+    require-https: ${SECURITY_REQUIRE_HTTPS:false}   # true en production (force HTTPS)
+
+# URL du Location Service (surchargeable par variable d'environnement LOCATION_SERVICE_URL)
+location-service:
+  url: ${LOCATION_SERVICE_URL:http://localhost:8082}

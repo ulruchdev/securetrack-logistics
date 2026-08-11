@@ -42,6 +42,14 @@ public class PackageController {
             @RequestParam(defaultValue = "packageId") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
             ){
+        // Bornes de pagination (protection contre les requêtes abusives - CWE-400)
+        if (page < 0) {
+            throw new IllegalArgumentException("Le paramètre 'page' doit être positif ou nul");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Le paramètre 'size' doit être compris entre 1 et 100");
+        }
+
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         Page<PackageDto> packages = packageService.getAll(pageable);

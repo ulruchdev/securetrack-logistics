@@ -2,6 +2,7 @@ package com.cbs.logistics.security_checkpoint_service.exception;
 
 import feign.FeignException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,36 +12,64 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Gestion centralisée des erreurs au format RFC 7807 (application/problem+json).
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CheckpointLogNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleCheckpointLogNotFound(CheckpointLogNotFoundException ex) {
-        Map<String, String> error = Map.of("error", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    public ResponseEntity<ProblemDetail> handleCheckpointLogNotFound(CheckpointLogNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Log de checkpoint non trouvé");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(LocationNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleLocationNotFound(LocationNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Localisation non trouvée");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(LocationServiceUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleLocationServiceUnavailable(LocationServiceUnavailableException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problemDetail.setTitle("Service de localisation indisponible");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problemDetail);
+    }
+
+    @ExceptionHandler(CheckpointUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleCheckpointUnavailable(CheckpointUnavailableException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problemDetail.setTitle("Checkpoint non disponible");
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problemDetail);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<ProblemDetail> handleValidationErrors(MethodArgumentNotValidException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "La requête est invalide");
+        problemDetail.setTitle("Erreur de validation");
+        Map<String, String> fieldErrors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            fieldErrors.put(fieldName, error.getDefaultMessage());
         });
-        Map<String, Object> response = Map.of("error", "Validation failed", "details", errors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        problemDetail.setProperty("fieldErrors", fieldErrors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
     @ExceptionHandler(FeignException.class)
-    public ResponseEntity<Map<String, String>> handleFeignException(FeignException ex) {
-        Map<String, String> error = Map.of("error", "External service error: " + ex.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
+    public ResponseEntity<ProblemDetail> handleFeignException(FeignException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Service externe indisponible");
+        problemDetail.setTitle("Service externe indisponible");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problemDetail);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericError(Exception ex) {
-        Map<String, String> error = Map.of("error", "Internal server error");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    public ResponseEntity<ProblemDetail> handleGenericError(Exception ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+        problemDetail.setTitle("Erreur interne du serveur");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problemDetail);
     }
 }

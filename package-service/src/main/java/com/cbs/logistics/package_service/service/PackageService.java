@@ -20,9 +20,7 @@ public class PackageService {
     private final PackageMapper packageMapper;
 
     public PackageDto create(CreatePackageRequest request) {
-        if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
-            throw new IllegalArgumentException("Description cannot be null or empty");
-        }
+        // La validation des champs est assurée par Bean Validation (@Valid au niveau du controller)
         Package entity = packageMapper.toEntity(request);
         entity.setPackageStatus(PackageStatus.NEW);
         Package savedEntity = packageRepository.save(entity);
