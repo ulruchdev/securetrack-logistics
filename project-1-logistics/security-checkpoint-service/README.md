@@ -28,23 +28,32 @@ Le Security Checkpoint Service est un microservice RESTful responsable du contr�
 3. **Lancer l'application :**
    ```bash
    cd project-1-logistics/security-checkpoint-service
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
+
+> 💡 **Profil dev** : sans profil, le schéma BDD est en `validate` (vérifié, jamais modifié).
+> Le profil `dev` permet à Hibernate de créer/mettre à jour le schéma automatiquement.
 
 L'application sera accessible sur `http://localhost:8083`.
 
 ## Sécurité
 
-Le service utilise **Basic Authentication** :
-- **Utilisateur** : `admin`
-- **Mot de passe** : `secret123`
+Le service utilise **Basic Authentication** avec des identifiants fournis par **variables d'environnement** (jamais versionnés) :
+- `AUTH_USER` : nom d'utilisateur (ex. `admin`)
+- `AUTH_PASS` : mot de passe sécurisé
 - **Rôle** : `CHECKPOINT_OPERATOR`
+
+Exportez ces variables avant d'exécuter les commandes :
+```bash
+export AUTH_USER=admin
+export AUTH_PASS=votre-mot-de-passe
+```
 
 ## Endpoints API
 
 ### Enregistrer un passage
 ```bash
-curl -u admin:secret123 -X POST http://localhost:8083/api/checkpoints \
+curl -u "$AUTH_USER:$AUTH_PASS" -X POST http://localhost:8083/api/checkpoints \
   -H "Content-Type: application/json" \
   -d '{
     "packageId": 1,
@@ -57,17 +66,17 @@ curl -u admin:secret123 -X POST http://localhost:8083/api/checkpoints \
 
 ### Consulter un log
 ```bash
-curl -u admin:secret123 -X GET http://localhost:8083/api/checkpoints/1
+curl -u "$AUTH_USER:$AUTH_PASS" -X GET http://localhost:8083/api/checkpoints/1
 ```
 
 ### Lister tous les logs (avec pagination)
 ```bash
-curl -u admin:secret123 -X GET "http://localhost:8083/api/checkpoints?page=0&size=10"
+curl -u "$AUTH_USER:$AUTH_PASS" -X GET "http://localhost:8083/api/checkpoints?page=0&size=10"
 ```
 
 ### Logs par colis (traçabilité)
 ```bash
-curl -u admin:secret123 -X GET http://localhost:8083/api/checkpoints/by-package/1
+curl -u "$AUTH_USER:$AUTH_PASS" -X GET http://localhost:8083/api/checkpoints/by-package/1
 ```
 
 ## Modèle de données
