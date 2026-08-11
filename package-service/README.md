@@ -20,7 +20,7 @@ Le Package Service est un microservice RESTful responsable de la gestion complè
 
 2. **Lancer l'application :**
    ```bash
-   cd project-1-logistics/package-service
+   cd package-service
    mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 
