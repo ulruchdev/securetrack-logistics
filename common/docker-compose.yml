@@ -1,0 +1,47 @@
+# ============================================================
+#  Infrastructure commune CBS Logistics
+#  PostgreSQL + MongoDB + Redis (liés à 127.0.0.1 uniquement)
+#
+#  Les identifiants viennent du fichier .env (non versionné).
+#  Exemple : cp common/.env.example common/.env
+# ============================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cbs-postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cbsuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est requis (copier common/.env.example vers common/.env)}
+      POSTGRES_DB: ${POSTGRES_DB:-cbsdb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    container_name: cbs-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-cbsuser}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD est requis (copier common/.env.example vers common/.env)}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: cbs-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:

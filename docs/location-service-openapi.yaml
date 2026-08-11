@@ -1,0 +1,223 @@
+openapi: 3.0.3
+info:
+  title: Location Service API
+  version: 1.0.0
+  description: API pour la gestion des emplacements logistiques dans le système CBS
+servers:
+  - url: http://localhost:8082
+    description: Location Service
+
+paths:
+  /api/locations:
+    post:
+      summary: Créer une location
+      description: Créer un nouvel emplacement logistique
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '201':
+          description: Location créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationDto'
+        '400':
+          description: Erreur de validation
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '503':
+          description: Service externe indisponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    get:
+      summary: Lister les locations
+      description: Récupérer toutes les locations avec pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des locations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageLocationDto'
+
+  /api/locations/{id}:
+    get:
+      summary: Récupérer une location
+      description: Récupérer une location par son ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails de la location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationDto'
+        '404':
+          description: Location non trouvée
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/locations/by-package/{packageId}:
+    get:
+      summary: Location enrichie par colis
+      description: Récupérer une location avec les informations du colis associé
+      parameters:
+        - name: packageId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Location avec informations du colis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichedLocationDto'
+        '404':
+          description: Location non trouvée pour ce colis
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '503':
+          description: Service externe indisponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  schemas:
+    LocationDto:
+      type: object
+      properties:
+        locationId:
+          type: string
+        packageId:
+          type: integer
+          format: int64
+        city:
+          type: string
+        zone:
+          type: string
+        checkpointAvailable:
+          type: boolean
+
+    CreateLocationRequest:
+      type: object
+      required:
+        - city
+        - zone
+        - checkpointAvailable
+        - packageId
+      properties:
+        city:
+          type: string
+          minLength: 1
+        zone:
+          type: string
+          minLength: 1
+        checkpointAvailable:
+          type: boolean
+        packageId:
+          type: integer
+          format: int64
+
+    EnrichedLocationDto:
+      type: object
+      properties:
+        location:
+          $ref: '#/components/schemas/LocationDto'
+        packageInfo:
+          $ref: '#/components/schemas/PackageInfo'
+
+    PackageInfo:
+      type: object
+      properties:
+        packageId:
+          type: integer
+          format: int64
+        description:
+          type: string
+        packageName:
+          type: string
+        packageType:
+          type: string
+        weight:
+          type: number
+          format: double
+        fragile:
+          type: boolean
+        packageStatus:
+          type: string
+          enum:
+            - NEW
+            - IN_TRANSIT
+            - DELIVERED
+            - LOST
+
+    PageLocationDto:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationDto'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+
+    ProblemDetail:
+      type: object
+      description: Réponse d'erreur au format RFC 7807 (application/problem+json)
+      properties:
+        type:
+          type: string
+          description: URI identifiant le type de problème (about:blank si non spécifié)
+        title:
+          type: string
+          description: Titre court et lisible du problème
+        status:
+          type: integer
+          format: int32
+          description: Code de statut HTTP
+        detail:
+          type: string
+          description: Explication détaillée du problème
+        instance:
+          type: string
+          description: URI de l'instance concernée

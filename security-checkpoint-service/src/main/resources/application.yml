@@ -1,0 +1,49 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: security-checkpoint-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/cbsdb
+    username: ${DB_USERNAME:cbsuser}
+    password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable DB_PASSWORD
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    com.cbs.logistics.security_checkpoint_service: INFO
+    org.springframework.cloud.openfeign: DEBUG
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+        loggerLevel: basic
+
+# Identifiants du compte d'administration (surchargables via variables d'environnement)
+security:
+  checkpoint:
+    username: ${SECURITY_USERNAME:admin}
+    password: ${SECURITY_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable SECURITY_PASSWORD
+    require-https: ${SECURITY_REQUIRE_HTTPS:false}   # true en production (force HTTPS)
+
+# URL du Location Service (surchargeable par variable d'environnement LOCATION_SERVICE_URL)
+location-service:
+  url: ${LOCATION_SERVICE_URL:http://localhost:8082}

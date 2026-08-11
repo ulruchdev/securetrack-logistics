@@ -39,10 +39,7 @@ jobs:
       - name: Maven Build & Tests (tests réels - doivent passer)
         run: mvn clean verify -B --no-transfer-progress
 
-      - name: CodeRabbit AI Code Review
-        uses: coderabbitai/ai-pr-reviewer@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # La revue de code est assurée par l'application GitHub CodeRabbit (action ci-pr-reviewer retirée du marketplace)
 
       - name: Build Docker images (préparation)
         run: echo "Docker build ready for future services"
