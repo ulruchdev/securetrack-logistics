@@ -21,13 +21,13 @@ Le Location Service est un microservice RESTful responsable de la gestion des em
 
 2. **Démarrer le Package Service :**
    ```bash
-   cd project-1-logistics/package-service
+   cd package-service
    mvn spring-boot:run
    ```
 
 3. **Lancer l'application :**
    ```bash
-   cd project-1-logistics/location-service
+   cd location-service
    mvn spring-boot:run
    ```
 

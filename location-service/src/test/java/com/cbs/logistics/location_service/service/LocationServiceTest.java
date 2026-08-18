@@ -4,7 +4,7 @@ import com.cbs.logistics.location_service.client.PackageServiceClient;
 import com.cbs.logistics.location_service.dto.CreateLocationRequest;
 import com.cbs.logistics.location_service.dto.EnrichedLocationDto;
 import com.cbs.logistics.location_service.dto.LocationDto;
-import com.cbs.logistics.location_service.dto.PackageDto;
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.location_service.entity.Location;
 import com.cbs.logistics.location_service.exception.LocationNotFoundException;
 import com.cbs.logistics.location_service.exception.PackageNotFoundException;
