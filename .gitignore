@@ -10,3 +10,15 @@ target/
 
 # Documentation interne client - NE JAMAIS POUSSER
 documentation/
+
+# ===== Fichiers .env locaux (secrets, NE JAMAIS COMMITTER) =====
+common/.env
+
+# ===== Artefacts Python (tests generate-combined-openapi) =====
+__pycache__/
+*.pyc
+*.cover
+.coverage
+
+# ===== Ancien dossier de travail (structure aplatie : ne plus versionner) =====
+project-1-logistics/
