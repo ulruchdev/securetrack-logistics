@@ -1,6 +1,11 @@
-# Profil dev local : Hibernate peut créer/mettre à jour le schéma automatiquement.
+# Profil dev local : le schéma est créé/appliqué par Liquibase (aucune gestion Hibernate).
 # Lancement : SPRING_PROFILES_ACTIVE=dev (ou -Dspring-boot.run.profiles=dev)
 spring:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
+
+# HTTPS forcé par défaut (sécurité) : désactivé UNIQUEMENT en dev local
+security:
+  checkpoint:
+    require-https: false

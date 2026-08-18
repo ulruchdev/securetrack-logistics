@@ -1,0 +1,52 @@
+databaseChangeLog:
+  # =====================================================================
+  # CBS Logistics - Security Checkpoint Service
+  # Migration initiale : table "checkpoint_logs"
+  # Conforme au modèle JPA (CheckpointLog.java) pour rester compatible
+  # avec hibernate.ddl-auto=validate.
+  # =====================================================================
+  - changeSet:
+      id: 1-init-checkpoint-logs-table
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: checkpoint_logs
+      changes:
+        - createTable:
+            tableName: checkpoint_logs
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: package_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checkpoint_time
+                  type: TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: result
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: VARCHAR(255)
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)
