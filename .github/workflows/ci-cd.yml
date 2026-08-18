@@ -42,8 +42,10 @@ jobs:
       - name: Tests Python + couverture (generate-combined-openapi.py)
         run: |
           pip install coverage --quiet
-          cd docs && python3 -m coverage run --source=generate-combined-openapi -m unittest test_generate_combined_openapi
-          python3 -m coverage report --fail-under=80
+          cd docs && python3 -m coverage run -m unittest test_generate_combined_openapi
+          # Le module est chargé via importlib (nom de fichier avec tirets) :
+          # on cible le fichier dans le rapport au lieu du nom de module.
+          python3 -m coverage report --include='*/generate-combined-openapi.py' --fail-under=80
 
       # La revue de code est assurée par l'application GitHub CodeRabbit (action ci-pr-reviewer retirée du marketplace)
 
