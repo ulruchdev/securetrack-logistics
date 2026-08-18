@@ -65,14 +65,13 @@ cd location-service && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 cd security-checkpoint-service && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-> 💡 **Profil `dev`** : Hibernate crée/met à jour le schéma automatiquement (`ddl-auto: update`).
-> Sans profil, le schéma est en `validate` (vérifié, **jamais** modifié) — comportement production.
+> 💡 **Schéma de base de données** : géré par **Liquibase** (migrations versionnées dans `db/changelog/`). `ddl-auto` est en `none` dans tous les profils — Hibernate ne modifie jamais le schéma ; chaque évolution passe par un nouveau changeset Liquibase.
 
 ## Configuration & sécurité
 
 - **Secrets obligatoires, jamais versionnés** : les mots de passe (`DB_PASSWORD`, `MONGO_URI`, `SECURITY_PASSWORD`) n'ont **plus de valeur par défaut** dans le code ni dans les `application.yml` — ils sont lus depuis l'environnement au démarrage. Un service **refuse de démarrer** si sa variable est absente. La liste complète figure dans [`common/.env.example`](common/.env.example) (à copier vers `common/.env` pour l'infrastructure Docker ; les services, eux, lisent les variables depuis l'environnement du shell).
 - **Security Checkpoint Service (Basic Auth)** : identifiants via variables d'environnement `SECURITY_USERNAME` (défaut local `admin`) et `SECURITY_PASSWORD` (**obligatoire**).
-- **HTTPS** : en production, activer `SECURITY_REQUIRE_HTTPS=true` pour exiger un canal sécurisé sur les endpoints protégés.
+- **HTTPS** : exigé **par défaut** sur les endpoints protégés (`SECURITY_REQUIRE_HTTPS=true` par défaut). Le profil `dev` (`application-dev.yml`) le désactive pour le développement local.
 - **En production** : définir des mots de passe forts et uniques — **aucune valeur n'est codée en dur dans le dépôt** ; les identifiants se configurent via `common/.env` (infrastructure) et les variables d'environnement (services).
 
 > 🔧 **Dépannage** : si un service échoue au démarrage avec `password authentication failed` (PostgreSQL) ou une erreur de connexion MongoDB, c'est que la variable correspondante est absente ou ne correspond pas aux identifiants de l'infrastructure Docker — pas un bug de code.
@@ -80,8 +79,10 @@ cd security-checkpoint-service && mvn spring-boot:run -Dspring-boot.run.profiles
 ## Tests
 
 ```bash
-cd parent && mvn test
+mvn clean verify
 ```
+
+> `mvn verify` exécute les tests **et** le contrôle de couverture JaCoCo (seuil minimal 80 %) pour les 4 modules (`common-dto`, `package-service`, `location-service`, `security-checkpoint-service`).
 
 ## Documentation API
 

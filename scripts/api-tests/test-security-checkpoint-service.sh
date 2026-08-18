@@ -5,7 +5,7 @@
 #  Usage : bash test-security-checkpoint-service.sh
 # =============================================================
 set -uo pipefail
-cd "$(dirname "$0")"
+cd -- "$(dirname "$0")" || { echo "ERREUR : impossible de changer de répertoire" >&2; exit 1; }
 source ./lib.sh
 [ -f ./config.env ] && source ./config.env
 

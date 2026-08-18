@@ -39,6 +39,12 @@ jobs:
       - name: Maven Build & Tests (tests réels - doivent passer)
         run: mvn clean verify -B --no-transfer-progress
 
+      - name: Tests Python + couverture (generate-combined-openapi.py)
+        run: |
+          pip install coverage --quiet
+          cd docs && python3 -m coverage run --source=generate-combined-openapi -m unittest test_generate_combined_openapi
+          python3 -m coverage report --fail-under=80
+
       # La revue de code est assurée par l'application GitHub CodeRabbit (action ci-pr-reviewer retirée du marketplace)
 
       - name: Build Docker images (préparation)

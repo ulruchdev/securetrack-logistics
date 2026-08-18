@@ -13,6 +13,10 @@ AUTH_USER="${AUTH_USER:-admin}"
 # AUTH_PASS est OBLIGATOIRE pour les appels authentifiés :
 # aucune valeur par défaut n'est codée en dur (vérifié dans req_auth).
 
+# --- Timeouts curl (bornent chaque requête, évite les blocages) ---
+CURL_TIMEOUT="${CURL_TIMEOUT:-20}"      # temps total (--max-time)
+CURL_CONNECT_TIMEOUT="${CURL_CONNECT_TIMEOUT:-5}"  # connexion (--connect-timeout)
+
 # --- Compteurs globaux ---
 PASS=0
 FAIL=0
@@ -39,9 +43,11 @@ check() {
 req() { # req <method> <url> <data JSON ou vide>
   local method="$1" url="$2" data="${3:-}"
   if [ -n "$data" ]; then
-    curl -s -w '\n%{http_code}' -X "$method" "$url" -H 'Content-Type: application/json' -d "$data"
+    curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_TIMEOUT" \
+      -w '\n%{http_code}' -X "$method" "$url" -H 'Content-Type: application/json' -d "$data"
   else
-    curl -s -w '\n%{http_code}' -X "$method" "$url"
+    curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_TIMEOUT" \
+      -w '\n%{http_code}' -X "$method" "$url"
   fi
 }
 
@@ -53,9 +59,11 @@ req_auth() { # req_auth <method> <url> <data JSON ou vide>  (Basic Auth)
     exit 1
   fi
   if [ -n "$data" ]; then
-    curl -s -w '\n%{http_code}' -X "$method" "$url" -u "$AUTH_USER:$AUTH_PASS" -H 'Content-Type: application/json' -d "$data"
+    curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_TIMEOUT" \
+      -w '\n%{http_code}' -X "$method" "$url" -u "$AUTH_USER:$AUTH_PASS" -H 'Content-Type: application/json' -d "$data"
   else
-    curl -s -w '\n%{http_code}' -X "$method" "$url" -u "$AUTH_USER:$AUTH_PASS"
+    curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_TIMEOUT" \
+      -w '\n%{http_code}' -X "$method" "$url" -u "$AUTH_USER:$AUTH_PASS"
   fi
 }
 

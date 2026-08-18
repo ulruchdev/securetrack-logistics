@@ -30,6 +30,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckpointLogDto'
+        '401':
+          description: Authentification requise - identifiants absents ou invalides
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '400':
           description: Erreur de validation
           content:
@@ -43,7 +49,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
         '422':
-          description: Checkpoint non disponible
+          description: Checkpoint non disponible OU localisation rattachée à un autre colis
           content:
             application/problem+json:
               schema:
@@ -77,6 +83,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageCheckpointLogDto'
+        '401':
+          description: Authentification requise - identifiants absents ou invalides
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
   /api/checkpoints/{id}:
     get:
@@ -98,6 +110,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckpointLogDto'
+        '401':
+          description: Authentification requise - identifiants absents ou invalides
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           description: Log de checkpoint non trouvé
           content:
@@ -125,6 +143,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageCheckpointLogDto'
+        '401':
+          description: Authentification requise - identifiants absents ou invalides
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           description: Aucun passage trouvé pour ce colis
           content:

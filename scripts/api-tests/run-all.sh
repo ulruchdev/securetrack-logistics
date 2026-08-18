@@ -4,7 +4,7 @@
 #  Usage : bash run-all.sh
 # =============================================================
 set -uo pipefail
-cd "$(dirname "$0")"
+cd -- "$(dirname "$0")" || { echo "ERREUR : impossible de changer de répertoire" >&2; exit 1; }
 
 OK=0
 KO=0
