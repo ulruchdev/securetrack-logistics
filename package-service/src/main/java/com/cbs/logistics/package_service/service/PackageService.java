@@ -1,7 +1,7 @@
 package com.cbs.logistics.package_service.service;
 
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
-import com.cbs.logistics.package_service.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.entity.Package;
 import com.cbs.logistics.package_service.entity.PackageStatus;
@@ -62,6 +62,10 @@ public class PackageService {
     }
 
     private void validateStatusTransition(PackageStatus currentStatus, PackageStatus newStatus) {
+        // Conserver le même statut est toujours permis (PATCH partiel sans changement de statut)
+        if (currentStatus == newStatus) {
+            return;
+        }
         if (currentStatus == PackageStatus.DELIVERED && newStatus != PackageStatus.DELIVERED) {
             throw new IllegalArgumentException("Cannot change status from DELIVERED");
         }

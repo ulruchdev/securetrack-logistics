@@ -10,5 +10,11 @@ public interface LocationServiceClient {
     @GetMapping("/api/locations/{id}")
     LocationDto getLocationById(@PathVariable String id);
 
-    record LocationDto(String city, String zone, Boolean checkpointAvailable) {}
+    /**
+     * DTO du contrat Location Service (GET /api/locations/{id}).
+     * packageId : colis rattaché à la localisation (utilisé pour vérifier que le
+     * checkpoint concerne bien le même colis que la requête).
+     * checkpointAvailable : boolean primitif — si absent, désérialisation en false.
+     */
+    record LocationDto(String locationId, Long packageId, String city, String zone, boolean checkpointAvailable) {}
 }

@@ -1,7 +1,7 @@
 package com.cbs.logistics.package_service.mapper;
 
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
-import com.cbs.logistics.package_service.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.entity.Package;
 import org.mapstruct.*;

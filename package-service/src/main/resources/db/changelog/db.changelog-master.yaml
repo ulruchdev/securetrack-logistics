@@ -1,0 +1,74 @@
+databaseChangeLog:
+  # =====================================================================
+  # CBS Logistics - Package Service
+  # Migration initiale : table "package"
+  # Conforme au modèle JPA (Package.java) pour rester compatible
+  # avec hibernate.ddl-auto=validate.
+  # =====================================================================
+  - changeSet:
+      id: 1-init-package-table
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: package
+      changes:
+        - createTable:
+            tableName: package
+            columns:
+              - column:
+                  name: package_id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+              - column:
+                  name: package_name
+                  type: VARCHAR(255)
+              - column:
+                  name: package_type
+                  type: VARCHAR(255)
+              - column:
+                  name: weight
+                  type: DOUBLE PRECISION
+              - column:
+                  name: fragile
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: package_status
+                  type: VARCHAR(255)
+              - column:
+                  name: location_id
+                  type: VARCHAR(255)
+
+  # =====================================================================
+  # V2 : verrou optimiste (@Version JPA) — colonne version ajoutée
+  # =====================================================================
+  - changeSet:
+      id: 2-add-version-column
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: package
+        - not:
+            - columnExists:
+                tableName: package
+                columnName: version
+      changes:
+        - addColumn:
+            tableName: package
+            columns:
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

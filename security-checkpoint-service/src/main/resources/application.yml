@@ -16,12 +16,21 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none   # Le schéma est géré par Liquibase (db/changelog/db.changelog-master.yaml)
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Redis : cache de disponibilité des lieux (voir RedisCacheConfig)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # Désactive le scan des repositories Redis (nos entités sont JPA, pas RedisHash)
+      repositories:
+        enabled: false
 
 logging:
   level:
@@ -42,8 +51,23 @@ security:
   checkpoint:
     username: ${SECURITY_USERNAME:admin}
     password: ${SECURITY_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable SECURITY_PASSWORD
-    require-https: ${SECURITY_REQUIRE_HTTPS:false}   # true en production (force HTTPS)
+    require-https: ${SECURITY_REQUIRE_HTTPS:true}    # Sécurité par défaut : force HTTPS hors dev (surcharge false en local)
 
 # URL du Location Service (surchargeable par variable d'environnement LOCATION_SERVICE_URL)
 location-service:
   url: ${LOCATION_SERVICE_URL:http://localhost:8082}
+
+
+# Résilience : CircuitBreaker sur l'appel à LocationService
+# (les timeouts Feign connect/read ci-dessus bornent chaque requête ;
+#  le circuit breaker coupe le flux dès que le service distant est en panne)
+resilience4j:
+  circuitbreaker:
+    instances:
+      locationService:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50

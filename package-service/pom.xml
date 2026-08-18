@@ -6,9 +6,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.cbs.onboarding</groupId>
-        <artifactId>project-1-logistics-parent</artifactId>
-        <relativePath>../parent/pom.xml</relativePath>
+        <groupId>com.securetrack</groupId>
+        <artifactId>securetrack-logistics</artifactId>
+        <relativePath>../pom.xml</relativePath>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -17,6 +17,13 @@
     <description>Microservice CRUD pour la gestion des colis (PostgreSQL + JPA)</description>
 
     <dependencies>
+        <!-- DTO partagés (contrat inter-service) -->
+        <dependency>
+            <groupId>com.securetrack</groupId>
+            <artifactId>common-dto</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot Web + JPA + Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -37,6 +44,12 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- Liquibase : migrations de schéma versionnées -->
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
         </dependency>
 
         <!-- PostgreSQL Driver (version gérée par Spring Boot 4.0.1) -->

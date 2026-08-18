@@ -15,6 +15,11 @@ public class Package {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY )
     private Long packageId;
+
+    /** Verrou optimiste : incrémenté à chaque UPDATE, détecte les modifications concurrentes. */
+    @Version
+    private Long version;
+
     @Column
     private String description;
     @Column

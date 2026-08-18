@@ -23,6 +23,8 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,7 +35,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(CheckpointLogController.class)
 @Import(SecurityConfig.class)
-@TestPropertySource(properties = "security.checkpoint.password=change-me-please")
+@TestPropertySource(properties = {
+        "security.checkpoint.password=change-me-please",
+        // HTTPS forcé par défaut hors dev : désactivé ici pour les tests MockMvc en HTTP
+        "security.checkpoint.require-https=false"
+})
 class SecurityConfigTest {
 
     @Autowired
@@ -50,14 +56,23 @@ class SecurityConfigTest {
     @Test
     void protectedEndpoint_shouldReturn401_withoutCredentials() throws Exception {
         mockMvc.perform(get("/api/checkpoints"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(header().string("WWW-Authenticate", "Basic realm=\"CBS Logistics\""))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.title").value("Non autorisé"))
+                .andExpect(jsonPath("$.detail").value("Authentification requise : identifiants absents ou invalides"));
     }
 
     @Test
     void protectedEndpoint_shouldReturn401_withWrongCredentials() throws Exception {
         mockMvc.perform(get("/api/checkpoints")
                         .header("Authorization", basicAuth("admin", "wrong-password")))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(header().string("WWW-Authenticate", "Basic realm=\"CBS Logistics\""))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.title").value("Non autorisé"));
     }
 
     @Test

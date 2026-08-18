@@ -16,15 +16,11 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
+      ddl-auto: none   # Le schéma est géré par Liquibase (db/changelog/db.changelog-master.yaml)
     properties:
       hibernate:
-        format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE   # Affiche les valeurs bindées
     com.cbs.logistics.package_service: INFO

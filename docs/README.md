@@ -43,7 +43,7 @@ swagger-codegen validate -i package-service-openapi.yaml
 ## Architecture Inter-Services
 
 ```text
-Package Service (8081) ←→ Location Service (8082) ←→ Security Checkpoint Service (8083)
+Package Service (8081) → Location Service (8082) → Security Checkpoint Service (8083)
 ```
 
 - Location Service valide les colis via Package Service

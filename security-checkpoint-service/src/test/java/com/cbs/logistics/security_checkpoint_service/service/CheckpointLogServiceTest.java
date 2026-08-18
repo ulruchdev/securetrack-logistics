@@ -1,6 +1,5 @@
 package com.cbs.logistics.security_checkpoint_service.service;
 
-import com.cbs.logistics.security_checkpoint_service.client.LocationServiceClient;
 import com.cbs.logistics.security_checkpoint_service.dto.CheckpointLogDto;
 import com.cbs.logistics.security_checkpoint_service.dto.CreateCheckpointRequest;
 import com.cbs.logistics.security_checkpoint_service.entity.CheckpointLog;
@@ -9,6 +8,7 @@ import com.cbs.logistics.security_checkpoint_service.exception.CheckpointLogNotF
 import com.cbs.logistics.security_checkpoint_service.exception.CheckpointUnavailableException;
 import com.cbs.logistics.security_checkpoint_service.exception.LocationNotFoundException;
 import com.cbs.logistics.security_checkpoint_service.mapper.CheckpointLogMapper;
+import com.cbs.logistics.security_checkpoint_service.port.LocationAvailabilityPort;
 import com.cbs.logistics.security_checkpoint_service.repository.CheckpointLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ class CheckpointLogServiceTest {
     private CheckpointLogMapper mapper;
 
     @Mock
-    private LocationServiceClient locationServiceClient;
+    private LocationAvailabilityPort locationAvailabilityPort;
 
     @InjectMocks
     private CheckpointLogService service;
@@ -50,8 +50,8 @@ class CheckpointLogServiceTest {
     private CheckpointLog entity;
     private CheckpointLogDto dto;
     private CreateCheckpointRequest request;
-    private LocationServiceClient.LocationDto availableLocation;
-    private LocationServiceClient.LocationDto unavailableLocation;
+    private LocationAvailabilityPort.LocationAvailability availableLocation;
+    private LocationAvailabilityPort.LocationAvailability unavailableLocation;
 
     @BeforeEach
     void setUp() {
@@ -77,13 +77,14 @@ class CheckpointLogServiceTest {
         request.setComment("Passage OK");
         request.setCreatedBy("agent-1");
 
-        availableLocation = new LocationServiceClient.LocationDto("Paris", "ZONE_A", true);
-        unavailableLocation = new LocationServiceClient.LocationDto("Paris", "ZONE_A", false);
+        // packageId, checkpointAvailable
+        availableLocation = new LocationAvailabilityPort.LocationAvailability(1L, true);
+        unavailableLocation = new LocationAvailabilityPort.LocationAvailability(1L, false);
     }
 
     @Test
     void create_shouldSaveCheckpoint_whenLocationAvailable() {
-        when(locationServiceClient.getLocationById("loc-1")).thenReturn(availableLocation);
+        when(locationAvailabilityPort.getLocation("loc-1")).thenReturn(availableLocation);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toDto(entity)).thenReturn(dto);
@@ -91,13 +92,13 @@ class CheckpointLogServiceTest {
         CheckpointLogDto result = service.create(request);
 
         assertThat(result).isEqualTo(dto);
-        verify(locationServiceClient).getLocationById("loc-1");
+        verify(locationAvailabilityPort).getLocation("loc-1");
         verify(repository).save(entity);
     }
 
     @Test
     void create_shouldThrow_whenCheckpointNotAvailable() {
-        when(locationServiceClient.getLocationById("loc-1")).thenReturn(unavailableLocation);
+        when(locationAvailabilityPort.getLocation("loc-1")).thenReturn(unavailableLocation);
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(CheckpointUnavailableException.class)
@@ -107,8 +108,21 @@ class CheckpointLogServiceTest {
     }
 
     @Test
+    void create_shouldThrow_whenLocationBelongsToAnotherPackage() {
+        LocationAvailabilityPort.LocationAvailability otherPackageLocation =
+                new LocationAvailabilityPort.LocationAvailability(2L, true);
+        when(locationAvailabilityPort.getLocation("loc-1")).thenReturn(otherPackageLocation);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(com.cbs.logistics.security_checkpoint_service.exception.LocationPackageMismatchException.class)
+                .hasMessageContaining("colis 2");
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void create_shouldPropagate_whenLocationNotFound() {
-        when(locationServiceClient.getLocationById("loc-1"))
+        when(locationAvailabilityPort.getLocation("loc-1"))
                 .thenThrow(new LocationNotFoundException("La localisation demandée n'existe pas"));
 
         assertThatThrownBy(() -> service.create(request))

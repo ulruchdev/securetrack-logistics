@@ -3,7 +3,7 @@ package com.cbs.logistics.location_service.controller;
 import com.cbs.logistics.location_service.dto.CreateLocationRequest;
 import com.cbs.logistics.location_service.dto.EnrichedLocationDto;
 import com.cbs.logistics.location_service.dto.LocationDto;
-import com.cbs.logistics.location_service.dto.PackageDto;
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.location_service.exception.LocationNotFoundException;
 import com.cbs.logistics.location_service.exception.PackageNotFoundException;
 import com.cbs.logistics.location_service.exception.PackageServiceUnavailableException;
@@ -214,5 +214,23 @@ class LocationControllerTest {
 
         mockMvc.perform(get("/api/locations/by-package/1"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getLocationByPackageId_shouldReturn400_whenIdNotNumeric() throws Exception {
+        mockMvc.perform(get("/api/locations/by-package/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Paramètre invalide"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void createLocation_shouldReturn400_whenBodyMalformed() throws Exception {
+        mockMvc.perform(post("/api/locations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"packageId\": \"incomplet"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Requête invalide"))
+                .andExpect(jsonPath("$.status").value(400));
     }
 }
