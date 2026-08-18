@@ -1,7 +1,7 @@
 package com.cbs.logistics.package_service.controller;
 
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
-import com.cbs.logistics.package_service.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.service.PackageService;
 import jakarta.validation.Valid;
@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/packages")
@@ -21,6 +22,10 @@ import java.net.URI;
 public class PackageController {
 
     private final PackageService packageService;
+
+    /** Propriétés persistées autorisées pour le tri (whitelist anti-erreurs 500 / injection de tri). */
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "packageId", "packageName", "packageType", "description", "weight", "fragile", "packageStatus", "locationId");
 
     @PostMapping
     public ResponseEntity<PackageDto> createPackage(@Valid @RequestBody CreatePackageRequest request) {
@@ -50,7 +55,19 @@ public class PackageController {
             throw new IllegalArgumentException("Le paramètre 'size' doit être compris entre 1 et 100");
         }
 
-        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        // Tri : direction et champ autorisés uniquement (sinon erreur 500 au tri Spring Data)
+        Sort.Direction direction;
+        if (sortDir.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        } else if (sortDir.equalsIgnoreCase("desc")) {
+            direction = Sort.Direction.DESC;
+        } else {
+            throw new IllegalArgumentException("Le paramètre 'sortDir' doit être 'asc' ou 'desc'");
+        }
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new IllegalArgumentException("Le paramètre 'sortBy' est invalide : " + sortBy);
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         Page<PackageDto> packages = packageService.getAll(pageable);
         return ResponseEntity.ok(packages);

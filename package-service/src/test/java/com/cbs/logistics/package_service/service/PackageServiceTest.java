@@ -1,7 +1,7 @@
 package com.cbs.logistics.package_service.service;
 
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
-import com.cbs.logistics.package_service.dto.PackageDto;
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.entity.Package;
 import com.cbs.logistics.package_service.entity.PackageStatus;
@@ -57,7 +57,7 @@ class PackageServiceTest {
         packageEntity.setFragile(true);
         packageEntity.setPackageStatus(PackageStatus.NEW);
 
-        packageDto = new PackageDto(1L, "Test Package", null, null, 2.5, true, PackageStatus.NEW);
+        packageDto = new PackageDto(1L, "Test Package", null, null, 2.5, true, "NEW");
 
         createRequest = new CreatePackageRequest();
         createRequest.setDescription("Test Package");
@@ -148,6 +148,40 @@ class PackageServiceTest {
         assertThatThrownBy(() -> packageService.update(1L, updateRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Cannot change status from DELIVERED");
+    }
+
+    @Test
+    void update_ShouldAllowSameStatus() {
+        // Given : conserver le statut actuel (PATCH partiel sans changement de statut)
+        packageEntity.setPackageStatus(PackageStatus.IN_TRANSIT);
+        updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
+        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
+        when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
+
+        // When
+        PackageDto result = packageService.update(1L, updateRequest);
+
+        // Then : aucune exception de transition, l'update passe
+        assertThat(result).isEqualTo(packageDto);
+        verify(packageRepository).save(packageEntity);
+    }
+
+    @Test
+    void update_ShouldAllowTransitionFromNewToInTransit() {
+        // Given : NEW -> IN_TRANSIT est une transition valide
+        packageEntity.setPackageStatus(PackageStatus.NEW);
+        updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
+        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
+        when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
+
+        // When
+        PackageDto result = packageService.update(1L, updateRequest);
+
+        // Then
+        assertThat(result).isEqualTo(packageDto);
+        verify(packageRepository).save(packageEntity);
     }
 
     @Test

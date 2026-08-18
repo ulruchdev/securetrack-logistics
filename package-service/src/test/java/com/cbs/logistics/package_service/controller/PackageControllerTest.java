@@ -1,7 +1,7 @@
 package com.cbs.logistics.package_service.controller;
 
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
-import com.cbs.logistics.package_service.dto.PackageDto;
+import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.entity.PackageStatus;
 import com.cbs.logistics.package_service.exception.PackageNotFoundException;
@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -48,7 +49,7 @@ class PackageControllerTest {
             """;
 
     private PackageDto dto() {
-        return new PackageDto(1L, "Colis fragile", "Colis test", "STANDARD", 2.5, true, PackageStatus.NEW);
+        return new PackageDto(1L, "Colis fragile", "Colis test", "STANDARD", 2.5, true, "NEW");
     }
 
     @Test
@@ -105,6 +106,24 @@ class PackageControllerTest {
     }
 
     @Test
+    void getPackageById_shouldReturn400_whenIdNotNumeric() throws Exception {
+        mockMvc.perform(get("/api/packages/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Paramètre invalide"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void createPackage_shouldReturn400_whenBodyMalformed() throws Exception {
+        mockMvc.perform(post("/api/packages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\": \"incomplet"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Requête invalide"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void getAllPackages_shouldReturnPaged200() throws Exception {
         PageImpl<PackageDto> page = new PageImpl<>(List.of(dto()), PageRequest.of(0, 10), 1);
         when(packageService.getAll(any())).thenReturn(page);
@@ -138,8 +157,40 @@ class PackageControllerTest {
     }
 
     @Test
+    void getAllPackages_shouldReturn400_whenSortByInvalid() throws Exception {
+        mockMvc.perform(get("/api/packages")
+                        .param("sortBy", "hack' OR 1=1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Requête invalide"))
+                .andExpect(jsonPath("$.detail").value("Le paramètre 'sortBy' est invalide : hack' OR 1=1"));
+    }
+
+    @Test
+    void getAllPackages_shouldReturn400_whenSortDirInvalid() throws Exception {
+        mockMvc.perform(get("/api/packages")
+                        .param("sortDir", "sideways"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Requête invalide"))
+                .andExpect(jsonPath("$.detail").value("Le paramètre 'sortDir' doit être 'asc' ou 'desc'"));
+    }
+
+    @Test
+    void getAllPackages_shouldReturn200_whenSortDirDesc() throws Exception {
+        PageImpl<PackageDto> page = new PageImpl<>(List.of(dto()), PageRequest.of(0, 10), 1);
+        when(packageService.getAll(any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/packages")
+                        .param("sortBy", "packageName")
+                        .param("sortDir", "DESC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].packageId").value(1));
+    }
+
+    @Test
     void updatePackage_shouldReturn200() throws Exception {
-        when(packageService.update(any(Long.class), any(UpdatePackageRequest.class))).thenReturn(dto());
+        // Le service retourne le DTO après application de l'update (statut IN_TRANSIT)
+        PackageDto updatedDto = new PackageDto(1L, "Colis fragile", "Colis test", "STANDARD", 2.5, true, "IN_TRANSIT");
+        when(packageService.update(eq(1L), any(UpdatePackageRequest.class))).thenReturn(updatedDto);
 
         mockMvc.perform(patch("/api/packages/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -149,7 +200,7 @@ class PackageControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.packageStatus").value("NEW"));
+                .andExpect(jsonPath("$.packageStatus").value("IN_TRANSIT"));
     }
 
     @Test

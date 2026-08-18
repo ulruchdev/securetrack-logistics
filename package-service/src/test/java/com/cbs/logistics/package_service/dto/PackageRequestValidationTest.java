@@ -141,6 +141,42 @@ class PackageRequestValidationTest {
                         && v.getMessage().equals("Le poids doit être positif ou nul"));
     }
 
+    @Test
+    void updateRequest_shouldRejectBlankDescription() {
+        UpdatePackageRequest request = new UpdatePackageRequest();
+        request.setDescription("");
+
+        Set<ConstraintViolation<UpdatePackageRequest>> violations = validator.validate(request);
+
+        assertThat(violations)
+                .anyMatch(v -> v.getPropertyPath().toString().equals("description")
+                        && v.getMessage().equals("La description ne peut pas être vide"));
+    }
+
+    @Test
+    void updateRequest_shouldRejectBlankPackageName() {
+        UpdatePackageRequest request = new UpdatePackageRequest();
+        request.setPackageName(" ");
+
+        Set<ConstraintViolation<UpdatePackageRequest>> violations = validator.validate(request);
+
+        assertThat(violations)
+                .anyMatch(v -> v.getPropertyPath().toString().equals("packageName")
+                        && v.getMessage().equals("Le nom du colis ne peut pas être vide"));
+    }
+
+    @Test
+    void updateRequest_shouldRejectBlankPackageType() {
+        UpdatePackageRequest request = new UpdatePackageRequest();
+        request.setPackageType("");
+
+        Set<ConstraintViolation<UpdatePackageRequest>> violations = validator.validate(request);
+
+        assertThat(violations)
+                .anyMatch(v -> v.getPropertyPath().toString().equals("packageType")
+                        && v.getMessage().equals("Le type de colis ne peut pas être vide"));
+    }
+
     private CreatePackageRequest validCreateRequest() {
         CreatePackageRequest request = new CreatePackageRequest();
         request.setDescription("Colis fragile");

@@ -24,8 +24,8 @@ Le Package Service est un microservice RESTful responsable de la gestion complè
    mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 
-> 💡 **Profil dev** : sans profil, le schéma BDD est en `validate` (vérifié, jamais modifié).
-> Le profil `dev` permet à Hibernate de créer/mettre à jour le schéma automatiquement.
+> 💡 **Schéma de base de données** : géré par **Liquibase** (migrations versionnées dans `db/changelog/`).
+> `ddl-auto` est en `none` dans tous les profils — chaque évolution de schéma passe par un changelog.
 
 L'application sera accessible sur `http://localhost:8081`.
 
@@ -77,6 +77,23 @@ La pagination utilise les paramètres suivants :
 - `sortDir` : direction du tri - asc/desc (défaut : asc)
 
 Exemple : `?page=1&size=5&sortBy=weight&sortDir=desc`
+
+## Gestion des erreurs
+
+Toutes les erreurs sont renvoyées au format **RFC 7807** (`application/problem+json`), avec les champs `type`, `title`, `status`, `detail` et `instance`, plus `fieldErrors` pour les erreurs de validation.
+
+| Statut | Cas |
+|---|---|
+| 400 | Validation Bean, paramètre invalide (`sortBy`, `sortDir`, id non numérique), body malformé |
+| 404 | Colis non trouvé |
+| 409 | Mise à jour concurrente (verrou optimiste @Version) |
+| 500 | Erreur interne inattendue |
+
+## Tests
+
+```bash
+mvn verify   # exécute les tests + le contrôle JaCoCo (seuil 80 %)
+```
 
 ## Statut de santé
 
