@@ -26,6 +26,7 @@
         <module>package-service</module>
         <module>location-service</module>
         <module>security-checkpoint-service</module>
+        <module>tracking-service</module>
     </modules>
 
     <properties>
@@ -34,6 +35,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <axon.version>4.11.2</axon.version>
         <lombok.version>1.18.34</lombok.version>
         <mapstruct.version>1.6.2</mapstruct.version>
     </properties>
@@ -123,6 +125,7 @@
                         <exclude>**/FeignConfig.class</exclude>
                         <exclude>**/OpenApiConfig.class</exclude>
                         <exclude>**/RedisCacheConfig.class</exclude>
+                        <exclude>**/EventProcessorConfig.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
