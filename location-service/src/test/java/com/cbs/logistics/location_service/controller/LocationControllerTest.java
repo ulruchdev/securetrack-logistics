@@ -93,8 +93,8 @@ class LocationControllerTest {
                         .content(invalidBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Erreur de validation"))
-                .andExpect(jsonPath("$.fieldErrors.packageId").value("L'ID du package est obligatoire"))
-                .andExpect(jsonPath("$.fieldErrors.city").value("La ville est obligatoire"));
+                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'packageId')].message").value("L'ID du package est obligatoire"))
+                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'city')].message").value("La ville est obligatoire"));
     }
 
     @Test

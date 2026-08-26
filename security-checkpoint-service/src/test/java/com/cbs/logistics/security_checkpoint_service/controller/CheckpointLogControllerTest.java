@@ -87,7 +87,7 @@ class CheckpointLogControllerTest {
                         .content(invalidBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Erreur de validation"))
-                .andExpect(jsonPath("$.fieldErrors.packageId").value("L'ID du colis est obligatoire"));
+                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'packageId')].message").value("L'ID du colis est obligatoire"));
     }
 
     @Test

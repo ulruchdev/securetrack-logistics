@@ -23,6 +23,7 @@ SERVICES = [
     ("package-service-openapi.yaml", 8081, "Package Service"),
     ("location-service-openapi.yaml", 8082, "Location Service"),
     ("security-checkpoint-service-openapi.yaml", 8083, "Security Checkpoint Service"),
+    ("tracking-service-openapi.yaml", 8084, "Tracking Service"),
 ]
 
 HEADER = """\
@@ -30,7 +31,7 @@ HEADER = """\
 #  CBS Logistics API - Spec combinée (FICHIER GÉNÉRÉ - ne pas éditer à la main)
 #
 #  Sources : package-service-openapi.yaml, location-service-openapi.yaml,
-#            security-checkpoint-service-openapi.yaml
+#            security-checkpoint-service-openapi.yaml, tracking-service-openapi.yaml
 #  Régénération : python3 docs/generate-combined-openapi.py
 # ============================================================
 """
@@ -87,7 +88,7 @@ def main() -> int:
             "version": "1.0.0",
             "description": (
                 "API combinée pour le système CBS Logistics incluant Package Service, "
-                "Location Service et Security Checkpoint Service."
+                "Location Service, Security Checkpoint Service et Tracking Service."
             ),
         },
         "servers": [{"url": f"http://localhost:{port}", "description": name} for _, port, name in SERVICES],

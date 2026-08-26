@@ -10,6 +10,7 @@ import com.cbs.logistics.security_checkpoint_service.mapper.CheckpointLogMapper;
 import com.cbs.logistics.security_checkpoint_service.port.LocationAvailabilityPort;
 import com.cbs.logistics.security_checkpoint_service.repository.CheckpointLogRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,7 @@ public class CheckpointLogService {
     private final LocationAvailabilityPort locationAvailabilityPort;
 
     @CircuitBreaker(name = "locationService")
+    @Retry(name = "locationService")
     public CheckpointLogDto create(CreateCheckpointRequest request) {
 
         // Valider que la location existe (via le port applicatif — l'adapter Feign

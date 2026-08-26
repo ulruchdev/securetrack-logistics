@@ -82,8 +82,8 @@ class PackageControllerTest {
                         .content(invalidBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Erreur de validation"))
-                .andExpect(jsonPath("$.fieldErrors.description").value("La description est obligatoire"))
-                .andExpect(jsonPath("$.fieldErrors.weight").value("Le poids doit être positif ou nul"));
+                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'description')].message").value("La description est obligatoire"))
+                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'weight')].message").value("Le poids doit être positif ou nul"));
     }
 
     @Test
@@ -213,7 +213,7 @@ class PackageControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fieldErrors.weight").value("Le poids doit être positif ou nul"));
+                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'weight')].message").value("Le poids doit être positif ou nul"));
     }
 
     @Test

@@ -4,16 +4,12 @@ import feign.FeignException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -23,76 +19,73 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(LocationNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleLocationNotFound(LocationNotFoundException ex) {
+    public ProblemDetail handleLocationNotFound(LocationNotFoundException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problemDetail.setTitle("Localisation non trouvée");
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(PackageNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handlePackageNotFound(PackageNotFoundException ex) {
+    public ProblemDetail handlePackageNotFound(PackageNotFoundException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problemDetail.setTitle("Colis non trouvé");
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(PackageServiceUnavailableException.class)
-    public ResponseEntity<ProblemDetail> handlePackageServiceUnavailable(PackageServiceUnavailableException ex) {
+    public ProblemDetail handlePackageServiceUnavailable(PackageServiceUnavailableException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         problemDetail.setTitle("Service de colis indisponible");
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "La requête est invalide");
         problemDetail.setTitle("Erreur de validation");
-        Map<String, String> fieldErrors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            if (error instanceof FieldError fieldError) {
-                fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage());
-            } else if (error instanceof ObjectError objectError) {
-                // Erreur au niveau de l'objet (ex: contrainte de classe) : pas de nom de champ
-                fieldErrors.put(objectError.getObjectName(), objectError.getDefaultMessage());
-            }
-        });
-        problemDetail.setProperty("fieldErrors", fieldErrors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+        problemDetail.setProperty("fieldErrors", ex.getBindingResult().getFieldErrors().stream()
+                .map(f -> Map.of("field", f.getField(), "message", f.getDefaultMessage()))
+                .toList());
+        return problemDetail;
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ProblemDetail> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Le paramètre '" + ex.getName() + "' a une valeur invalide : '" + ex.getValue() + "'");
         problemDetail.setTitle("Paramètre invalide");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ProblemDetail> handleNotReadable(HttpMessageNotReadableException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Corps de requête invalide ou illisible");
+    public ProblemDetail handleNotReadable(HttpMessageNotReadableException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Corps de requête invalide ou illisible");
         problemDetail.setTitle("Requête invalide");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(DuplicateKeyException.class)
-    public ResponseEntity<ProblemDetail> handleDuplicateKey(DuplicateKeyException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Une localisation existe déjà pour ce colis");
+    public ProblemDetail handleDuplicateKey(DuplicateKeyException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "Une localisation existe déjà pour ce colis");
         problemDetail.setTitle("Conflit de données");
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ProblemDetail> handleFeignException(FeignException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Service externe indisponible");
+    public ProblemDetail handleFeignException(FeignException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "Service externe indisponible");
         problemDetail.setTitle("Service externe indisponible");
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problemDetail);
+        return problemDetail;
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ProblemDetail> handleGenericError(Exception ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+    public ProblemDetail handleGenericError(Exception ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne est survenue");
         problemDetail.setTitle("Erreur interne du serveur");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problemDetail);
+        return problemDetail;
     }
 }

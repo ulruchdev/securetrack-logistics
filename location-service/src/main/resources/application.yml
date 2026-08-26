@@ -36,7 +36,7 @@ feign:
 package-service:
   url: ${PACKAGE_SERVICE_URL:http://localhost:8081}
 
-# Résilience : CircuitBreaker sur l'appel à PackageService
+# Résilience : CircuitBreaker + Retry sur l'appel à PackageService
 # (les timeouts Feign connect/read ci-dessus bornent chaque requête ;
 #  le circuit breaker coupe le flux dès que le service distant est en panne)
 resilience4j:
@@ -49,3 +49,26 @@ resilience4j:
         automaticTransitionFromOpenToHalfOpenEnabled: true
         waitDurationInOpenState: 10s
         failureRateThreshold: 50
+  retry:
+    instances:
+      packageService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - feign.RetryableException
+
+# Actuator : monitoring des circuit breakers
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents
+  endpoint:
+    circuitbreakers:
+      enabled: true
+    circuitbreakerevents:
+      enabled: true

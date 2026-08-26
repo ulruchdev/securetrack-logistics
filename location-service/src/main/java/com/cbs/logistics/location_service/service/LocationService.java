@@ -10,6 +10,7 @@ import com.cbs.logistics.location_service.exception.LocationNotFoundException;
 import com.cbs.logistics.location_service.locationMapper.LocationMapper;
 import com.cbs.logistics.location_service.repository.LocationRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ public class LocationService {
     private final PackageServiceClient packageServiceClient;
 
     @CircuitBreaker(name = "packageService")
+    @Retry(name = "packageService")
     public LocationDto create(CreateLocationRequest request) {
         // Valider que le package existe (le client Feign lève les exceptions métier via l'ErrorDecoder)
         packageServiceClient.getPackageById(request.getPackageId());
@@ -43,6 +45,7 @@ public class LocationService {
     }
 
     @CircuitBreaker(name = "packageService")
+    @Retry(name = "packageService")
     public EnrichedLocationDto getByPackageId(Long packageId) {
         Location location = locationRepository.findByPackageId(packageId)
                 .orElseThrow(() -> new LocationNotFoundException("Location not found for package id: " + packageId));
