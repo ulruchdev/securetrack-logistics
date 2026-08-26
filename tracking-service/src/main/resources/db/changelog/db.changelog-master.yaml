@@ -1,0 +1,52 @@
+databaseChangeLog:
+  # =====================================================================
+  # CBS Logistics - Tracking Service
+  # Migration : table de PROJECTION "tracking_history"
+  #
+  # Les tables Axon (domain_event_entry, snapshot_event_entry,
+  # association_value_entry) sont créées automatiquement par Hibernate
+  # via ddl-auto: update — elles ne sont pas gérées ici.
+  # =====================================================================
+  - changeSet:
+      id: 1-init-tracking-history-table
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: tracking_history
+      changes:
+        - createTable:
+            tableName: tracking_history
+            columns:
+              - column:
+                  name: tracking_id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: package_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: VARCHAR(255)
+              - column:
+                  name: status
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_tracking_history_package_id
+            tableName: tracking_history
+            columns:
+              - column:
+                  name: package_id
