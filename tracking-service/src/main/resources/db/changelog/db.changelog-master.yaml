@@ -1,14 +1,11 @@
 databaseChangeLog:
   # =====================================================================
   # CBS Logistics - Tracking Service
-  # Migration initiale : table de PROJECTION "tracking_history"
+  # Migration : table de PROJECTION "tracking_history"
   #
-  # Rôle de cette table : c'est le READ-MODEL CQRS.
-  #   - Elle est remplie automatiquement par les @EventHandler d'Axon
-  #     (jamais par une écriture manuelle).
-  #   - Elle sert uniquement aux lectures (GET /api/tracking/**).
-  #   - Les tables axon_* (event store) sont créées par Axon lui-même,
-  #     elles ne sont PAS gérées ici — séparation des responsabilités.
+  # Les tables Axon (domain_event_entry, snapshot_event_entry,
+  # association_value_entry) sont créées automatiquement par Hibernate
+  # via ddl-auto: update — elles ne sont pas gérées ici.
   # =====================================================================
   - changeSet:
       id: 1-init-tracking-history-table
@@ -47,9 +44,6 @@ databaseChangeLog:
                   type: TIMESTAMP WITHOUT TIME ZONE
                   constraints:
                     nullable: false
-
-        # Index de lecture : la requête principale est
-        # "historique complet d'un colis" -> filtrage par package_id
         - createIndex:
             indexName: idx_tracking_history_package_id
             tableName: tracking_history
