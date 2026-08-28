@@ -112,10 +112,71 @@ class TrackingAggregateTest {
     }
 
     @Test
-    @DisplayName("Même statut que l'actuel : autorisé (pas une violation)")
-    void sameStatus_shouldBeAllowed() {
+    @DisplayName("Même statut que l'actuel : rejeté (doublon)")
+    void sameStatus_shouldBeRejected() {
         fixture.given(event("PKG-7", "LOC-A", "IN_TRANSIT", "2026-08-26T10:00:00Z"))
                 .when(new RegisterTransitionCommand("PKG-7", "LOC-B", "IN_TRANSIT"))
-                .expectSuccessfulHandlerExecution();
+                .expectException(InvalidTransitionException.class)
+                .expectNoEvents();
+    }
+
+    @Test
+    @DisplayName("NEW → IN_TRANSIT : transition valide")
+    void newToInTransit_shouldBeAccepted() {
+        fixture.given(event("PKG-10", null, "NEW", "2026-08-26T10:00:00Z"))
+                .when(new RegisterTransitionCommand("PKG-10", "LOC-A", "IN_TRANSIT"))
+                .expectSuccessfulHandlerExecution()
+                .expectEventsMatching(singleTransition("PKG-10", "LOC-A", "IN_TRANSIT"));
+    }
+
+    @Test
+    @DisplayName("NEW → DELIVERED : invalide (saute IN_TRANSIT)")
+    void newToDelivered_shouldBeRejected() {
+        fixture.given(event("PKG-11", null, "NEW", "2026-08-26T10:00:00Z"))
+                .when(new RegisterTransitionCommand("PKG-11", "LOC-A", "DELIVERED"))
+                .expectException(InvalidTransitionException.class)
+                .expectNoEvents();
+    }
+
+    @Test
+    @DisplayName("NEW → LOST : transition valide")
+    void newToLost_shouldBeAccepted() {
+        fixture.given(event("PKG-12", null, "NEW", "2026-08-26T10:00:00Z"))
+                .when(new RegisterTransitionCommand("PKG-12", null, "LOST"))
+                .expectSuccessfulHandlerExecution()
+                .expectEventsMatching(singleTransition("PKG-12", null, "LOST"));
+    }
+
+    @Test
+    @DisplayName("IN_TRANSIT → DELIVERED : transition valide")
+    void inTransitToDelivered_shouldBeAccepted() {
+        fixture.given(
+                        event("PKG-13", null, "NEW", "2026-08-26T10:00:00Z"),
+                        event("PKG-13", "LOC-A", "IN_TRANSIT", "2026-08-26T11:00:00Z"))
+                .when(new RegisterTransitionCommand("PKG-13", "LOC-B", "DELIVERED"))
+                .expectSuccessfulHandlerExecution()
+                .expectEventsMatching(singleTransition("PKG-13", "LOC-B", "DELIVERED"));
+    }
+
+    @Test
+    @DisplayName("IN_TRANSIT → NEW : invalide (retour en arrière)")
+    void inTransitToNew_shouldBeRejected() {
+        fixture.given(
+                        event("PKG-14", null, "NEW", "2026-08-26T10:00:00Z"),
+                        event("PKG-14", "LOC-A", "IN_TRANSIT", "2026-08-26T11:00:00Z"))
+                .when(new RegisterTransitionCommand("PKG-14", null, "NEW"))
+                .expectException(InvalidTransitionException.class)
+                .expectNoEvents();
+    }
+
+    @Test
+    @DisplayName("LOST : terminal, aucune transition possible")
+    void lost_shouldBeTerminal() {
+        fixture.given(
+                        event("PKG-15", null, "NEW", "2026-08-26T10:00:00Z"),
+                        event("PKG-15", null, "LOST", "2026-08-26T12:00:00Z"))
+                .when(new RegisterTransitionCommand("PKG-15", null, "IN_TRANSIT"))
+                .expectException(InvalidTransitionException.class)
+                .expectNoEvents();
     }
 }

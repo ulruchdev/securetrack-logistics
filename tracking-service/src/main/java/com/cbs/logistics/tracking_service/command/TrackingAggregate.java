@@ -11,6 +11,7 @@ import org.axonframework.modelling.command.CreationPolicy;
 import org.axonframework.spring.stereotype.Aggregate;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 
 import static org.axonframework.modelling.command.AggregateLifecycle.apply;
@@ -27,7 +28,21 @@ public class TrackingAggregate {
 
     /** Statuts métier autorisés pour une transition. */
     public static final Set<String> ALLOWED_STATUSES =
-            Set.of("NEW", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED");
+            Set.of("NEW", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "LOST");
+
+    /**
+     * Matrice des transitions autorisées.
+     * Miroir de PackageService.validateStatusTransition() — la source de vérité
+     * pour le chemin de transition. Si PackageService valide avant publication,
+     * cet invariant est un filet de sécurité pour les appels directs (POST /api/tracking).
+     */
+    public static final Map<String, Set<String>> VALID_TRANSITIONS = Map.of(
+            "NEW",            Set.of("IN_TRANSIT", "LOST"),
+            "IN_TRANSIT",     Set.of("DELIVERED", "LOST"),
+            "OUT_FOR_DELIVERY", Set.of("DELIVERED", "LOST"),
+            "DELIVERED",      Set.of(),  // terminal
+            "LOST",           Set.of()   // terminal
+    );
 
     /**
      * Identifiant de l'aggregate. Axon l'utilise pour :
@@ -70,11 +85,29 @@ public class TrackingAggregate {
     public void handle(RegisterTransitionCommand command) {
         validateStatus(command.newStatus());
 
-        // INVARIANT : un colis livré est clos, définitivement.
-        // (currentStatus == null signifie "première transition", donc pas d'invariant)
-        if ("DELIVERED".equals(currentStatus)) {
+        // Première transition : pas de validation de chemin
+        if (currentStatus == null) {
+            apply(new TrackingTransitionedEvent(
+                    command.packageId(),
+                    command.locationId(),
+                    command.newStatus(),
+                    Instant.now()
+            ));
+            return;
+        }
+
+        // Interdire le doublon (meme statut envoye deux fois)
+        if (currentStatus.equals(command.newStatus())) {
             throw new InvalidTransitionException(
-                    "Le colis " + packageId + " est déjà DELIVERED : aucune nouvelle transition n'est autorisée");
+                    "Le colis " + packageId + " est deja en statut " + currentStatus);
+        }
+
+        // Valider la matrice de transitions
+        Set<String> allowed = VALID_TRANSITIONS.get(currentStatus);
+        if (allowed == null || !allowed.contains(command.newStatus())) {
+            throw new InvalidTransitionException(
+                    "Transition invalide : " + currentStatus + " -> " + command.newStatus()
+                    + ". Transitions autorisees depuis " + currentStatus + " : " + allowed);
         }
 
         apply(new TrackingTransitionedEvent(

@@ -11,6 +11,9 @@ servers:
   - url: http://localhost:8084
     description: Tracking Service
 
+security:
+  - basicAuth: []
+
 paths:
   /api/tracking:
     post:
@@ -46,6 +49,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '500':
           description: Erreur interne inattendue
           content:
@@ -75,6 +84,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TransitionDto'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '500':
           description: Erreur interne inattendue
           content:
@@ -107,6 +122,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '500':
           description: Erreur interne inattendue
           content:
@@ -115,6 +136,13 @@ paths:
                 $ref: '#/components/schemas/ProblemDetail'
 
 components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: >
+        Authentification Basic HTTP.
+        Credentials : admin / (voir SECURITY_PASSWORD)
   schemas:
     RegisterTransitionRequest:
       type: object

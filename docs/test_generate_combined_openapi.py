@@ -70,13 +70,15 @@ class MainTests(unittest.TestCase):
                       self.spec("Loc", {"/api/locations": {"get": {"summary": "lister"}}}))
         write_fixture(self.doc_dir, "security-checkpoint-service-openapi.yaml",
                       self.spec("Chk", {"/api/checkpoints": {"get": {"summary": "lister"}}}))
+        write_fixture(self.doc_dir, "tracking-service-openapi.yaml",
+                      self.spec("Trk", {"/api/tracking": {"get": {"summary": "lister"}}}))
 
         with mock.patch.object(gen, "DOCS", self.doc_dir):
             rc = gen.main()
 
         self.assertEqual(rc, 0)
         output = yaml.safe_load((self.doc_dir / "combined-openapi.yaml").read_text())
-        self.assertEqual(len(output["paths"]), 3)
+        self.assertEqual(len(output["paths"]), 4)
         # servers par opération : port du service source
         self.assertEqual(output["paths"]["/api/packages"]["get"]["servers"][0]["url"],
                          "http://localhost:8081")
@@ -98,6 +100,8 @@ class MainTests(unittest.TestCase):
                                 security=[{"basicAuth": []}],
                                 security_schemes={"basicAuth": {"type": "http", "scheme": "basic"}},
                                 schemas={"ProblemDetail": {"type": "object"}}))
+        write_fixture(self.doc_dir, "tracking-service-openapi.yaml",
+                      self.spec("Trk", {"/api/tracking": {"get": {"summary": "s"}}}))
 
         with mock.patch.object(gen, "DOCS", self.doc_dir):
             rc = gen.main()
@@ -111,8 +115,8 @@ class MainTests(unittest.TestCase):
         # securitySchemes agrégés + schéma importé
         self.assertIn("basicAuth", output["components"]["securitySchemes"])
         self.assertIn("ProblemDetail", output["components"]["schemas"])
-        # servers racine (3)
-        self.assertEqual(len(output["servers"]), 3)
+        # servers racine (4)
+        self.assertEqual(len(output["servers"]), 4)
 
     def test_main_detects_conflicting_schema(self):
         schema_a = {"type": "object", "properties": {"a": {"type": "string"}}}
@@ -126,6 +130,8 @@ class MainTests(unittest.TestCase):
                                 schemas={"X": schema_b}))
         write_fixture(self.doc_dir, "security-checkpoint-service-openapi.yaml",
                       self.spec("Chk", {"/api/checkpoints": {"get": {"summary": "s"}}}))
+        write_fixture(self.doc_dir, "tracking-service-openapi.yaml",
+                      self.spec("Trk", {"/api/tracking": {"get": {"summary": "s"}}}))
 
         with mock.patch.object(gen, "DOCS", self.doc_dir):
             rc = gen.main()
@@ -140,6 +146,8 @@ class MainTests(unittest.TestCase):
                       self.spec("Loc", {"/api/locations": {"get": {"summary": "s"}}}, schemas={"X": same}))
         write_fixture(self.doc_dir, "security-checkpoint-service-openapi.yaml",
                       self.spec("Chk", {"/api/checkpoints": {"get": {"summary": "s"}}}))
+        write_fixture(self.doc_dir, "tracking-service-openapi.yaml",
+                      self.spec("Trk", {"/api/tracking": {"get": {"summary": "s"}}}))
 
         with mock.patch.object(gen, "DOCS", self.doc_dir):
             rc = gen.main()
@@ -155,6 +163,8 @@ class MainTests(unittest.TestCase):
                       self.spec("Loc", {"/api/shared": {"post": {"summary": "loc-post"}}}))
         write_fixture(self.doc_dir, "security-checkpoint-service-openapi.yaml",
                       self.spec("Chk", {"/api/checkpoints": {"get": {"summary": "s"}}}))
+        write_fixture(self.doc_dir, "tracking-service-openapi.yaml",
+                      self.spec("Trk", {"/api/tracking": {"get": {"summary": "s"}}}))
 
         with mock.patch.object(gen, "DOCS", self.doc_dir), \
                 mock.patch("builtins.print") as mock_print:

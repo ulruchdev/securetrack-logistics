@@ -51,6 +51,9 @@ public class PackageStatusChangedListener {
         } catch (Exception e) {
             log.error("Failed to register transition for package {}: {}",
                     event.packageId(), e.getMessage(), e);
+            // Rethrow pour que RabbitMQ redelivre le message (NACK)
+            // Sinon le message est ACK et la transition est perdue
+            throw e;
         }
     }
 }

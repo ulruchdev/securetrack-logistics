@@ -500,6 +500,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '500':
           description: Erreur interne inattendue
           content:
@@ -511,6 +517,8 @@ paths:
         description: Tracking Service
       tags:
       - Tracking Service
+      security: &id002
+      - basicAuth: []
   /api/tracking/package/{packageId}:
     get:
       summary: Historique des transitions d'un colis
@@ -535,6 +543,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TransitionDto'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '500':
           description: Erreur interne inattendue
           content:
@@ -546,6 +560,7 @@ paths:
         description: Tracking Service
       tags:
       - Tracking Service
+      security: *id002
   /api/tracking/{trackingId}:
     get:
       summary: Consulter une transition par son identifiant
@@ -571,6 +586,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '500':
           description: Erreur interne inattendue
           content:
@@ -582,12 +603,15 @@ paths:
         description: Tracking Service
       tags:
       - Tracking Service
+      security: *id002
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
-      description: Basic Authentication (identifiants via variables d'environnement)
+      description: 'Authentification Basic HTTP. Credentials : admin / (voir SECURITY_PASSWORD)
+
+        '
   schemas:
     PackageDto:
       type: object

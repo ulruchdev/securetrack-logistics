@@ -60,6 +60,7 @@ resilience4j:
           - java.io.IOException
           - java.util.concurrent.TimeoutException
           - feign.RetryableException
+          - com.cbs.logistics.location_service.exception.PackageServiceUnavailableException
 
 # Actuator : monitoring des circuit breakers
 management:

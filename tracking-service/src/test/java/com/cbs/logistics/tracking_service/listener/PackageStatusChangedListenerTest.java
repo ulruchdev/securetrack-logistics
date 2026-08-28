@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -77,12 +78,14 @@ class PackageStatusChangedListenerTest {
     }
 
     @Test
-    void shouldNotThrow_WhenCommandFails() {
+    void shouldRethrow_WhenCommandFails() {
         // Given : le gateway lève une exception (ex: 409 transition invalide)
         when(commandGateway.sendAndWait(any())).thenThrow(new RuntimeException("Transition invalide"));
 
-        // When & Then : aucune exception propagée
-        listener.onStatusChanged(event);
+        // When & Then : exception propagée pour que RabbitMQ redelivre le message (NACK)
+        assertThatThrownBy(() -> listener.onStatusChanged(event))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Transition invalide");
         verify(commandGateway).sendAndWait(any());
     }
 }

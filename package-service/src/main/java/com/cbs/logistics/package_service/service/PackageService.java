@@ -31,6 +31,10 @@ public class PackageService {
         Package entity = packageMapper.toEntity(request);
         entity.setPackageStatus(PackageStatus.NEW);
         Package savedEntity = packageRepository.save(entity);
+
+        // Publication de l'evenement : le Tracking Service sera notifie automatiquement
+        publishStatusChanged(savedEntity.getPackageId(), null, savedEntity.getPackageStatus());
+
         return packageMapper.toDto(savedEntity);
     }
 
