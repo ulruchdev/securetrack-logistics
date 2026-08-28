@@ -1,12 +1,12 @@
 package com.cbs.logistics.tracking_service.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 
@@ -16,8 +16,6 @@ import java.util.Map;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /** Invariant métier violé (colis déjà livré, statut inconnu) -> 409 CONFLICT. */
     @ExceptionHandler(InvalidTransitionException.class)
@@ -38,7 +36,7 @@ public class GlobalExceptionHandler {
     /** Erreurs de validation Bean Validation (@NotBlank) -> 400 BAD_REQUEST. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Requête invalide");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "La requête est invalide");
         problem.setTitle("Erreur de validation");
         problem.setProperty("fieldErrors", ex.getBindingResult().getFieldErrors().stream()
                 .map(f -> Map.of("field", f.getField(), "message", f.getDefaultMessage()))
@@ -46,14 +44,31 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /** Paramètre de path/query avec un type invalide -> 400 BAD_REQUEST. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Le paramètre '" + ex.getName() + "' a une valeur invalide : '" + ex.getValue() + "'");
+        problem.setTitle("Paramètre invalide");
+        return problem;
+    }
+
+    /** Corps de requête JSON malformé ou illisible -> 400 BAD_REQUEST. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleNotReadable(HttpMessageNotReadableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Corps de requête invalide ou illisible");
+        problem.setTitle("Requête invalide");
+        return problem;
+    }
+
     /** Tout le reste : erreur technique imprévue -> 500, message générique
      *  (jamais le stacktrace ni e.getMessage() au client). */
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(Exception ex) {
-        log.error("Erreur interne non gérée", ex);
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne est survenue");
-        problem.setTitle("Erreur interne");
+        problem.setTitle("Erreur interne du serveur");
         return problem;
     }
 }

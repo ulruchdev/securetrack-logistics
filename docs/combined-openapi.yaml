@@ -2,15 +2,15 @@
 #  CBS Logistics API - Spec combinée (FICHIER GÉNÉRÉ - ne pas éditer à la main)
 #
 #  Sources : package-service-openapi.yaml, location-service-openapi.yaml,
-#            security-checkpoint-service-openapi.yaml
+#            security-checkpoint-service-openapi.yaml, tracking-service-openapi.yaml
 #  Régénération : python3 docs/generate-combined-openapi.py
 # ============================================================
 openapi: 3.0.3
 info:
   title: CBS Logistics API
   version: 1.0.0
-  description: API combinée pour le système CBS Logistics incluant Package Service, Location Service et Security Checkpoint
-    Service.
+  description: API combinée pour le système CBS Logistics incluant Package Service, Location Service, Security Checkpoint
+    Service et Tracking Service.
 servers:
 - url: http://localhost:8081
   description: Package Service
@@ -18,6 +18,8 @@ servers:
   description: Location Service
 - url: http://localhost:8083
   description: Security Checkpoint Service
+- url: http://localhost:8084
+  description: Tracking Service
 paths:
   /api/packages:
     post:
@@ -459,12 +461,157 @@ paths:
       - url: http://localhost:8083
         description: Security Checkpoint Service
       security: *id001
+  /api/tracking:
+    post:
+      summary: Enregistrer une transition de statut
+      description: 'Enregistre un changement de statut pour un colis.
+
+        La transition est validée par l''aggregate (invariants métier) :
+
+        - Statuts autorisés : NEW, IN_TRANSIT, DELIVERED, LOST
+
+        - DELIVERED et LOST sont des états terminaux (aucune transition possible après)
+
+        - Retourne 409 si la transition est interdite
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterTransitionRequest'
+      responses:
+        '201':
+          description: Transition enregistrée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterTransitionResponse'
+        '400':
+          description: Erreur de validation (champs manquants ou JSON invalide)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Transition invalide (règle métier violée)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '500':
+          description: Erreur interne inattendue
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8084
+        description: Tracking Service
+      tags:
+      - Tracking Service
+      security: &id002
+      - basicAuth: []
+  /api/tracking/package/{packageId}:
+    get:
+      summary: Historique des transitions d'un colis
+      description: 'Retourne la liste complète des transitions de statut pour un colis donné,
+
+        ordonnées chronologiquement (de la plus ancienne à la plus récente).
+
+        '
+      parameters:
+      - name: packageId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Identifiant du colis
+      responses:
+        '200':
+          description: Liste des transitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransitionDto'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '500':
+          description: Erreur interne inattendue
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8084
+        description: Tracking Service
+      tags:
+      - Tracking Service
+      security: *id002
+  /api/tracking/{trackingId}:
+    get:
+      summary: Consulter une transition par son identifiant
+      description: Retourne les détails d'une transition spécifique.
+      parameters:
+      - name: trackingId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Identifiant de la transition
+      responses:
+        '200':
+          description: Transition trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransitionDto'
+        '404':
+          description: Transition introuvable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentification requise (Basic Auth)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '500':
+          description: Erreur interne inattendue
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+      servers:
+      - url: http://localhost:8084
+        description: Tracking Service
+      tags:
+      - Tracking Service
+      security: *id002
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
-      description: Basic Authentication (identifiants via variables d'environnement)
+      description: 'Authentification Basic HTTP. Credentials : admin / (voir SECURITY_PASSWORD)
+
+        '
   schemas:
     PackageDto:
       type: object
@@ -728,3 +875,54 @@ components:
           type: integer
         number:
           type: integer
+    RegisterTransitionRequest:
+      type: object
+      required:
+      - packageId
+      - newStatus
+      properties:
+        packageId:
+          type: string
+          description: Identifiant du colis
+          example: PKG-001
+        locationId:
+          type: string
+          description: Identifiant de la localisation (optionnel)
+          example: '1'
+        newStatus:
+          type: string
+          description: Nouveau statut du colis
+          enum:
+          - NEW
+          - IN_TRANSIT
+          - DELIVERED
+          - LOST
+    RegisterTransitionResponse:
+      type: object
+      properties:
+        packageId:
+          type: string
+          description: Identifiant du colis
+        status:
+          type: string
+          description: Statut enregistré
+    TransitionDto:
+      type: object
+      properties:
+        trackingId:
+          type: integer
+          format: int64
+          description: Identifiant unique de la transition
+        packageId:
+          type: string
+          description: Identifiant du colis
+        locationId:
+          type: string
+          description: Identifiant de la localisation
+        status:
+          type: string
+          description: Statut du colis après transition
+        occurredAt:
+          type: string
+          format: date-time
+          description: Horodatage de la transition (UTC)

@@ -9,8 +9,9 @@ Système de microservices pour la gestion de la chaîne logistique CBS : suivi d
 | **package-service** | 8081 | PostgreSQL (`cbsdb`) | CRUD des colis (création, consultation, mise à jour partielle, suppression) |
 | **location-service** | 8082 | MongoDB (`cbsdb`) | Localisation des colis — valide l'existence du colis via Package Service |
 | **security-checkpoint-service** | 8083 | PostgreSQL (`cbsdb`) | Logs de passages sécurisés — valide la localisation via Location Service |
+| **tracking-service** | 8084 | PostgreSQL (`cbsdb`) | Historique des transitions de statut — **CQRS + Event Sourcing** (Axon Framework) |
 
-Communication inter-services : **OpenFeign** (Package Service ← Location Service ← Security Checkpoint Service). Documentation API OpenAPI 3.0.3 disponible dans le dossier [`docs/`](docs/).
+Communication inter-services : **OpenFeign** (Package Service ← Location Service ← Security Checkpoint Service). Le Tracking Service utilise **Axon Framework** (CQRS/Event Sourcing) pour enregistrer les transitions de statut. Documentation API OpenAPI 3.0.3 disponible dans le dossier [`docs/`](docs/).
 
 ## Prérequis
 
@@ -45,7 +46,7 @@ export SECURITY_PASSWORD="<votre-secret-admin>"        # mot de passe Basic Auth
 
 | Variable | Obligatoire | Sert à | Correspondance (`common/.env`) |
 |---|---|---|---|
-| `DB_PASSWORD` | ✅ | Mot de passe PostgreSQL (package, security) | `POSTGRES_PASSWORD` |
+| `DB_PASSWORD` | ✅ | Mot de passe PostgreSQL (package, security, tracking) | `POSTGRES_PASSWORD` |
 | `MONGO_URI` | ✅ | URI de connexion MongoDB (location) | `MONGO_USER` : `MONGO_PASSWORD` |
 | `SECURITY_PASSWORD` | ✅ | Mot de passe admin Security Checkpoint (Basic Auth) | — (valeur libre) |
 | `DB_URL` / `DB_USERNAME` | ❌ (défauts locaux) | URL + utilisateur PostgreSQL | `POSTGRES_DB` / `POSTGRES_USER` |
@@ -63,6 +64,9 @@ cd location-service && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 # Security Checkpoint Service (port 8083)
 cd security-checkpoint-service && mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Tracking Service (port 8084) — CQRS + Event Sourcing
+cd tracking-service && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 > 💡 **Schéma de base de données** : géré par **Liquibase** (migrations versionnées dans `db/changelog/`). `ddl-auto` est en `none` dans tous les profils — Hibernate ne modifie jamais le schéma ; chaque évolution passe par un nouveau changeset Liquibase.
@@ -82,7 +86,7 @@ cd security-checkpoint-service && mvn spring-boot:run -Dspring-boot.run.profiles
 mvn clean verify
 ```
 
-> `mvn verify` exécute les tests **et** le contrôle de couverture JaCoCo (seuil minimal 80 %) pour les 4 modules (`common-dto`, `package-service`, `location-service`, `security-checkpoint-service`).
+> `mvn verify` exécute les tests **et** le contrôle de couverture JaCoCo (seuil minimal 80 %) pour les 5 modules (`common-dto`, `package-service`, `location-service`, `security-checkpoint-service`, `tracking-service`).
 
 ## Documentation API
 
@@ -90,6 +94,7 @@ mvn clean verify
   - Package Service : `http://localhost:8081/swagger-ui/index.html`
   - Location Service : `http://localhost:8082/swagger-ui/index.html`
   - Security Checkpoint Service : `http://localhost:8083/swagger-ui/index.html`
+  - Tracking Service : `http://localhost:8084/swagger-ui/index.html`
 - **Specs OpenAPI** : `docs/combined-openapi.yaml` (vue combinée) + une spec dédiée par service.
 - Les erreurs suivent le standard **RFC 7807** (`application/problem+json`).
 
@@ -99,4 +104,5 @@ mvn clean verify
 - `package-service/` — [README](package-service/README.md)
 - `location-service/` — [README](location-service/README.md)
 - `security-checkpoint-service/` — [README](security-checkpoint-service/README.md)
+- `tracking-service/` — [README](tracking-service/README.md) — CQRS + Event Sourcing (Axon)
 - `scripts/api-tests/` — scripts de tests des API (bash)
