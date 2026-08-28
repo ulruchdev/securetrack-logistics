@@ -46,6 +46,12 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
 
+        <!-- Spring AMQP + RabbitMQ (event-driven) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- Liquibase : migrations de schéma versionnées -->
         <dependency>
             <groupId>org.liquibase</groupId>

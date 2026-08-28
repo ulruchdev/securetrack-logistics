@@ -24,6 +24,17 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:cbsuser}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+security:
+  tracking:
+    username: ${SECURITY_USERNAME:admin}
+    password: ${SECURITY_PASSWORD}
+
 axon:
   axonserver:
     enabled: false

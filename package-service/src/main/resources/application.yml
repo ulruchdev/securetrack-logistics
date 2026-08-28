@@ -21,6 +21,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:cbsuser}
+    password: ${RABBITMQ_PASSWORD:guest}
+
 logging:
   level:
     com.cbs.logistics.package_service: INFO

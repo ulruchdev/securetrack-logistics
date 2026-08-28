@@ -9,3 +9,6 @@ databaseChangeLog:
   - include:
       file: 001-create-tracking-history.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 002-add-unique-constraint-tracking-history.yaml
+      relativeToChangelogFile: true

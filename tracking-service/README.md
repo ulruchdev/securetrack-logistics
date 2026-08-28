@@ -59,7 +59,9 @@ Le Tracking Service est un microservice RESTful responsable de l'enregistrement 
    mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 
-> 💡 **Schéma de base de données** : géré par **Liquibase** (table `tracking_history`) pour la projection de lecture. Les tables de l'event store Axon (`domain_event_entry`, `snapshot_event_entry`, `token_entry`) sont créées automatiquement par Hibernate via `ddl-auto: update`.
+> 💡 **Schéma de base de données** :
+> - Table `tracking_history` : gérée par **Liquibase** (migration versionnée).
+> - Tables Axon (`domain_event_entry`, `snapshot_event_entry`, `token_entry`) : créées par Hibernate via **`ddl-auto: update`** (voir section « Pourquoi ddl-auto: update ? » ci-dessous).
 
 > 💡 **Sérialisation** : le service utilise **Jackson** (`axon.serializer.general: jackson`) au lieu de XStream par défaut, compatible avec les records Java 21+.
 
@@ -150,12 +152,61 @@ Toutes les erreurs suivent le standard **RFC 7807** (`application/problem+json`)
 |---|---|
 | `400` | Requête invalide (champs manquants, JSON malformé) |
 | `404` | Transition introuvable |
-| `409` | Règle métier violée (transition interdite) |
-| `500` | Erreur interne inattendue |
+| `409` | Règle métier violée (transition interdite) || `500` | Erreur interne inattendue |
 
-## Configuration
+## Pourquoi ddl-auto: update ? (exception contrôlée)
 
-| Propriété | Défaut | Description |
+> ⚠️ **Les 3 autres services du projet utilisent `ddl-auto: none` + Liquibase.**
+> Le Tracking Service est la seule exception, et c'est un choix **délibéré et documenté**.
+
+### Le problème
+
+Axon Framework 4.11 détecte JPA sur le classpath et instancie automatiquement un
+`JpaEventStorageEngine` dont les entités Hibernate (`DomainEventEntry`, `SnapshotEventEntry`,
+`TokenEntry`) ont un mapping de colonnes **incompatible** avec le schéma SQL brut
+extrait des JDBC factory classes d'Axon (`PostgresEventTableFactory`, `PostgresTokenTableFactory`).
+
+Concrètement, Hibernate génère un INSERT avec un ordre de colonnes et des types
+qui ne correspondent pas au DDL Liquibase, causant une erreur :
+```
+ERROR: column "meta_data" is of type bytea but expression is of type bigint
+```
+
+### Les tentatives éliminées
+
+| Tentative | Résultat | Raison
+|---|---|---
+| Exclusion des auto-configs JPA Axon | ❌ | Axon crée quand même le bean via `InfraConfiguration`
+| Bean `EventStorageEngine` JDBC custom | ❌ | `JdbcAutoConfiguration` a `@ConditionalOnMissingBean(EventBus.class)` — skip car EventBus existe toujours
+| `@EntityScan` pour exclure les entités Axon | ❌ | Axon résout les entités via le `EntityManagerFactory` interne
+| `@Primary` sur notre bean | ❌ | Le `JpaEventStorageEngine` est créé AVANT notre config
+| Schema Liquibase exact (bytea) | ❌ | L'ordre des colonnes dans l'INSERT ne correspond pas au mapping JPA
+
+### La solution retenue
+
+`ddl-auto: update` pour les tables Axon uniquement. Hibernate crée ces tables
+avec le mapping JPA exact attendu par `JpaEventStorageEngine`. La table `tracking_history`
+reste gérée par Liquibase.
+
+| Table | Gestionnaire | Raison |
+|---|---|---|
+| `tracking_history` | **Liquibase** | Projection read-model, pas une entité Axon |
+| `domain_event_entry` | **Hibernate** (ddl-auto: update) | Mapping JPA Axon incompatible avec Liquibase |
+| `snapshot_event_entry` | **Hibernate** (ddl-auto: update) | Idem |
+| `token_entry` | **Hibernate** (ddl-auto: update) | Idem |
+
+### Impact
+
+- **En dev** : aucun impact — Hibernate crée/met à jour les tables automatiquement.
+- **En prod** : les tables Axon sont stables (schema rarement modifié par Axon). Si Axon est mis à jour, un `ddl-auto: validate` + script SQL manuel serait plus sûr.
+- **Audit** : ce choix est documenté ici et dans le `application.yml`.
+
+### Migration future possible
+
+Si Axon publie un module Liquibase officiel ou si le `JdbcEventStorageEngine` devient
+le default en Spring Boot, on pourra repasser en `ddl-auto: none` pour l'ensemble du projet.
+
+## Configuration | Propriété | Défaut | Description |
 |---|---|---|
 | `server.port` | `8084` | Port HTTP |
 | `DB_URL` | `jdbc:postgresql://localhost:5433/cbsdb` | URL PostgreSQL |

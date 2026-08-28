@@ -7,6 +7,7 @@ import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,8 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Tests HTTP du flux d'ÉCRITURE : 201 nominal, 400 validation, 409 métier.
  * Le contrat d'erreur vérifié est ProblemDetail RFC 7807 (application/problem+json).
+ * La sécurité est désactivée dans les tests unitaires (addFilters = false).
  */
 @WebMvcTest(TrackingController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TrackingControllerTest {
 
     @Autowired

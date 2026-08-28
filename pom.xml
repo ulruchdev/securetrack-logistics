@@ -126,6 +126,8 @@
                         <exclude>**/OpenApiConfig.class</exclude>
                         <exclude>**/RedisCacheConfig.class</exclude>
                         <exclude>**/EventProcessorConfig.class</exclude>
+                        <exclude>**/RabbitMQConfig.class</exclude>
+                        <exclude>**/SecurityConfig.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

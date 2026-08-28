@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2-add-unique-constraint-tracking-history
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: tracking_history
+      changes:
+        # Contrainte unique pour empêcher les doublons lors du rebuild
+        # Si un événement est rejoué, la clé (package_id, status, occurred_at)
+        # empêche l'insertion en double
+        - addUniqueConstraint:
+            tableName: tracking_history
+            columnNames: package_id, status, occurred_at
+            constraintName: uk_tracking_history_package_status_time
