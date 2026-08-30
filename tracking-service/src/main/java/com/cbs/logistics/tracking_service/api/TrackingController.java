@@ -1,6 +1,10 @@
 package com.cbs.logistics.tracking_service.api;
 
 import com.cbs.logistics.tracking_service.command.RegisterTransitionCommand;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -23,6 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/tracking")
 @RequiredArgsConstructor
+@Tag(name = "Tracking (Ecriture)", description = "Enregistrement des transitions de statut (CQRS cote ecriture)")
 public class TrackingController {
 
     /**
@@ -34,6 +39,13 @@ public class TrackingController {
      */
     private final CommandGateway commandGateway;
 
+    @Operation(summary = "Enregistrer une transition", description = "Enregistrer un changement de statut pour un colis. Valide par l'aggregate (invariants metier).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Transition enregistree"),
+            @ApiResponse(responseCode = "400", description = "Erreur de validation ou JSON invalide"),
+            @ApiResponse(responseCode = "401", description = "Authentification requise"),
+            @ApiResponse(responseCode = "409", description = "Transition invalide (regle metier violee)")
+    })
     @PostMapping
     public ResponseEntity<Map<String, Object>> registerTransition(
             @Valid @RequestBody RegisterTransitionRequest request) {
