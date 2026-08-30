@@ -41,14 +41,15 @@ Les bases sont exposées **uniquement en local** (`127.0.0.1`) : PostgreSQL sur 
 #    définis dans common/.env (étape 1).
 export DB_PASSWORD="<votre-mot-de-passe>"              # identique à POSTGRES_PASSWORD de common/.env
 export MONGO_URI="mongodb://cbsuser:<votre-mot-de-passe>@localhost:27017/cbsdb?authSource=admin"  # = MONGO_USER:MONGO_PASSWORD
-export SECURITY_PASSWORD="<votre-secret-admin>"        # mot de passe Basic Auth du checkpoint (valeur libre)
+export JWT_SECRET="<clé-base64-≥32-bytes>"        # mot de passe Basic Auth interne (dev only)
 ```
 
 | Variable | Obligatoire | Sert à | Correspondance (`common/.env`) |
 |---|---|---|---|
 | `DB_PASSWORD` | ✅ | Mot de passe PostgreSQL (package, security, tracking) | `POSTGRES_PASSWORD` |
 | `MONGO_URI` | ✅ | URI de connexion MongoDB (location) | `MONGO_USER` : `MONGO_PASSWORD` |
-| `SECURITY_PASSWORD` | ✅ | Mot de passe admin Security Checkpoint (Basic Auth) | — (valeur libre) |
+| `SECURITY_PASSWORD` | ✅ | Mot de passe admin (interne, dev) | — (valeur libre) |
+| `JWT_SECRET` | ✅ | Clé symétrique JWT (base64, ≥32 bytes) | — (valeur libre) |
 | `DB_URL` / `DB_USERNAME` | ❌ (défauts locaux) | URL + utilisateur PostgreSQL | `POSTGRES_DB` / `POSTGRES_USER` |
 
 ### 3. Services
@@ -73,10 +74,11 @@ cd tracking-service && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ## Configuration & sécurité
 
-- **Secrets obligatoires, jamais versionnés** : les mots de passe (`DB_PASSWORD`, `MONGO_URI`, `SECURITY_PASSWORD`) n'ont **plus de valeur par défaut** dans le code ni dans les `application.yml` — ils sont lus depuis l'environnement au démarrage. Un service **refuse de démarrer** si sa variable est absente. La liste complète figure dans [`common/.env.example`](common/.env.example) (à copier vers `common/.env` pour l'infrastructure Docker ; les services, eux, lisent les variables depuis l'environnement du shell).
-- **Security Checkpoint Service (Basic Auth)** : identifiants via variables d'environnement `SECURITY_USERNAME` (défaut local `admin`) et `SECURITY_PASSWORD` (**obligatoire**).
-- **HTTPS** : exigé **par défaut** sur les endpoints protégés (`SECURITY_REQUIRE_HTTPS=true` par défaut). Le profil `dev` (`application-dev.yml`) le désactive pour le développement local.
-- **En production** : définir des mots de passe forts et uniques — **aucune valeur n'est codée en dur dans le dépôt** ; les identifiants se configurent via `common/.env` (infrastructure) et les variables d'environnement (services).
+- **Secrets obligatoires, jamais versionnés** : les mots de passe (`DB_PASSWORD`, `MONGO_URI`, `JWT_SECRET`) n'ont **plus de valeur par défaut** dans le code ni dans les `application.yml` — ils sont lus depuis l'environnement au démarrage. Un service **refuse de démarrer** si sa variable est absente. La liste complète figure dans [`common/.env.example`](common/.env.example).
+- **JWT Resource Server (OAuth2)** : les 4 services utilisent un validateur JWT partagé (`common-security`). En dev, une clé symétrique (`JWT_SECRET`) est utilisée. En prod, configurez `jwt.jwk-set-uri` vers votre IdP (Keycloak, Auth0, etc.).
+- **Multi-tenant** : chaque entité porte un `tenant_id` extrait du claim JWT. Un tenant ne peut accéder qu'à ses propres données (isolation testée).
+- **HTTPS** : exigé **par défaut** sur les endpoints protégés. Le profil `dev` le désactive.
+- **En production** : définir des mots de passe forts et uniques — **aucune valeur n'est codée en dur dans le dépôt**.
 
 > 🔧 **Dépannage** : si un service échoue au démarrage avec `password authentication failed` (PostgreSQL) ou une erreur de connexion MongoDB, c'est que la variable correspondante est absente ou ne correspond pas aux identifiants de l'infrastructure Docker — pas un bug de code.
 
@@ -88,7 +90,13 @@ mvn clean verify
 
 > `mvn verify` exécute les tests **et** le contrôle de couverture JaCoCo (seuil minimal 80 %) pour les 5 modules (`common-dto`, `package-service`, `location-service`, `security-checkpoint-service`, `tracking-service`).
 
-## Documentation API
+## Produit cible (commercial)
+
+Vision, correctifs backend et architecture frontend (web + mobile) :
+
+- [`docs/produit/README.md`](docs/produit/README.md)
+
+## Documentation API (dépôt actuel)
 
 - **Swagger UI** :
   - Package Service : `http://localhost:8081/swagger-ui/index.html`
