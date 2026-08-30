@@ -18,12 +18,13 @@ databaseChangeLog:
               - column:
                   name: tenant_id
                   type: VARCHAR(255)
-                  constraints:
-                    nullable: false
+                  defaultValue: 'default'
         - addDefaultValue:
             tableName: package
             columnName: tenant_id
             defaultValue: 'default'
+        - sql:
+            sql: ALTER TABLE package ALTER COLUMN tenant_id SET NOT NULL
         - createIndex:
             tableName: package
             indexName: idx_package_tenant_id

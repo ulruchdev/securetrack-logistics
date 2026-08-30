@@ -134,6 +134,9 @@
                         <exclude>**/EventProcessorConfig.class</exclude>
                         <exclude>**/RabbitMQConfig.class</exclude>
                         <exclude>**/SecurityConfig.class</exclude>
+                        <exclude>**/dto/*.class</exclude>
+                        <exclude>**/controller/SiteController.class</exclude>
+                        <exclude>**/controller/CheckpointController.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
