@@ -4,6 +4,11 @@ import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.service.PackageService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +24,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/packages")
 @RequiredArgsConstructor
+@Tag(name = "Packages", description = "Gestion des colis")
 public class PackageController {
 
     private final PackageService packageService;
@@ -27,6 +33,11 @@ public class PackageController {
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "packageId", "packageName", "packageType", "description", "weight", "fragile", "packageStatus", "locationId");
 
+    @Operation(summary = "Creer un colis", description = "Ajouter un nouveau colis avec statut initial NEW")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Colis cree avec succes"),
+            @ApiResponse(responseCode = "400", description = "Erreur de validation")
+    })
     @PostMapping
     public ResponseEntity<PackageDto> createPackage(@Valid @RequestBody CreatePackageRequest request) {
         PackageDto packageDto = packageService.create(request);
@@ -34,12 +45,18 @@ public class PackageController {
         return ResponseEntity.created(location).body(packageDto);
     }
 
+    @Operation(summary = "Consulter un colis", description = "Recuperer les details d'un colis par son identifiant")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Colis trouve"),
+            @ApiResponse(responseCode = "404", description = "Colis introuvable")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<PackageDto> getPackageById(@PathVariable Long id) {
         PackageDto packageDto = packageService.getById(id);
         return ResponseEntity.ok(packageDto);
     }
 
+    @Operation(summary = "Lister les colis", description = "Liste paginee de tous les colis avec tri")
     @GetMapping
     public ResponseEntity<Page<PackageDto>> getAllPackages(
             @RequestParam(defaultValue = "0") int page,
@@ -73,12 +90,23 @@ public class PackageController {
         return ResponseEntity.ok(packages);
     }
 
+    @Operation(summary = "Mettre a jour un colis", description = "Modification partielle (PATCH) du statut ou des attributs")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Colis mis a jour"),
+            @ApiResponse(responseCode = "404", description = "Colis introuvable"),
+            @ApiResponse(responseCode = "409", description = "Transition de statut invalide")
+    })
     @PatchMapping("/{id}")
     public ResponseEntity<PackageDto> updatePackage(@PathVariable Long id, @Valid @RequestBody UpdatePackageRequest request) {
         PackageDto packageDto = packageService.update(id, request);
         return ResponseEntity.ok(packageDto);
     }
 
+    @Operation(summary = "Supprimer un colis", description = "Suppression definitive d'un colis")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Colis supprime"),
+            @ApiResponse(responseCode = "404", description = "Colis introuvable")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePackage(@PathVariable Long id) {
         packageService.delete(id);
