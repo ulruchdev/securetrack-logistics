@@ -2,6 +2,7 @@ package com.cbs.logistics.package_service.service;
 
 import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.common.dto.PackageStatusChangedEvent;
+import com.cbs.logistics.common.security.context.TenantContext;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.entity.Package;
@@ -27,26 +28,25 @@ public class PackageService {
     private final RabbitTemplate rabbitTemplate;
 
     public PackageDto create(CreatePackageRequest request) {
-        // La validation des champs est assurée par Bean Validation (@Valid au niveau du controller)
         Package entity = packageMapper.toEntity(request);
         entity.setPackageStatus(PackageStatus.NEW);
+        entity.setTenantId(TenantContext.getCurrent());
         Package savedEntity = packageRepository.save(entity);
 
-        // Publication de l'evenement : le Tracking Service sera notifie automatiquement
         publishStatusChanged(savedEntity.getPackageId(), null, savedEntity.getPackageStatus());
 
         return packageMapper.toDto(savedEntity);
     }
 
-
-
-    public Page<PackageDto> getAll(Pageable page){
-        Page<Package> packages=packageRepository.findAll(page);
+    public Page<PackageDto> getAll(Pageable page) {
+        String tenantId = TenantContext.getCurrent();
+        Page<Package> packages = packageRepository.findByTenantId(tenantId, page);
         return packages.map(packageMapper::toDto);
     }
 
     public PackageDto update(Long id, UpdatePackageRequest request) {
-        Package entity = packageRepository.findById(id)
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByPackageIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(id));
 
         PackageStatus previousStatus = entity.getPackageStatus();
@@ -58,7 +58,6 @@ public class PackageService {
         packageMapper.updateEntityFromRequest(request, entity);
         Package updatedEntity = packageRepository.save(entity);
 
-        // Publication de l'événement si le statut a changé
         if (request.getPackageStatus() != null && previousStatus != request.getPackageStatus()) {
             publishStatusChanged(id, previousStatus, updatedEntity.getPackageStatus());
         }
@@ -67,20 +66,21 @@ public class PackageService {
     }
 
     public PackageDto getById(Long id) {
-        Package entity = packageRepository.findById(id)
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByPackageIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(id));
         return packageMapper.toDto(entity);
     }
 
     public void delete(Long id) {
-        if (!packageRepository.existsById(id)) {
+        String tenantId = TenantContext.getCurrent();
+        if (!packageRepository.existsByPackageIdAndTenantId(id, tenantId)) {
             throw new PackageNotFoundException(id);
         }
         packageRepository.deleteById(id);
     }
 
     private void validateStatusTransition(PackageStatus currentStatus, PackageStatus newStatus) {
-        // Conserver le même statut est toujours permis (PATCH partiel sans changement de statut)
         if (currentStatus == newStatus) {
             return;
         }
@@ -90,7 +90,6 @@ public class PackageService {
         if (currentStatus == PackageStatus.LOST && newStatus != PackageStatus.LOST) {
             throw new IllegalArgumentException("Cannot change status from LOST");
         }
-        // Allow transitions: NEW -> IN_TRANSIT -> DELIVERED or LOST
         if (currentStatus == PackageStatus.NEW && newStatus != PackageStatus.IN_TRANSIT && newStatus != PackageStatus.LOST) {
             throw new IllegalArgumentException("From NEW, can only go to IN_TRANSIT or LOST");
         }
@@ -106,14 +105,12 @@ public class PackageService {
                     packageId,
                     previousStatus != null ? previousStatus.name() : null,
                     newStatus.name(),
-                    null, // locationId non disponible côté Package Service
+                    null,
                     Instant.now()
             );
             rabbitTemplate.convertAndSend("package-status", "status.changed", event);
             log.info("Event published: package {} status {} -> {}", packageId, previousStatus, newStatus);
         } catch (Exception e) {
-            // L'échec de publication ne doit pas faire échouer l'update
-            // Le Tracking Service peut aussi être appelé manuellement
             log.warn("Failed to publish status changed event for package {}: {}", packageId, e.getMessage());
         }
     }

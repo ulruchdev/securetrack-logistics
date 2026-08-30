@@ -108,6 +108,7 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-cbsuser}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD requis}
       SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,6 +135,7 @@ services:
       MONGO_URI: mongodb://${MONGO_USER:-cbsuser}:${MONGO_PASSWORD:?MONGO_PASSWORD requis}@mongodb:27017/cbsdb?authSource=admin
       PACKAGE_SERVICE_URL: http://package-service:8081
       SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -167,6 +169,7 @@ services:
       SECURITY_PASSWORD: ${SECURITY_PASSWORD:?SECURITY_PASSWORD requis}
       SECURITY_REQUIRE_HTTPS: "false"
       SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
     depends_on:
       postgres:
         condition: service_healthy
@@ -202,6 +205,7 @@ services:
       SECURITY_USERNAME: ${SECURITY_USERNAME:-admin}
       SECURITY_PASSWORD: ${SECURITY_PASSWORD:?SECURITY_PASSWORD requis}
       SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
     depends_on:
       postgres:
         condition: service_healthy

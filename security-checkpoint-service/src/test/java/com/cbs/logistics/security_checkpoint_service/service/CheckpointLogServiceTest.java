@@ -1,4 +1,5 @@
 package com.cbs.logistics.security_checkpoint_service.service;
+import com.cbs.logistics.common.security.context.TenantContext;
 
 import com.cbs.logistics.security_checkpoint_service.dto.CheckpointLogDto;
 import com.cbs.logistics.security_checkpoint_service.dto.CreateCheckpointRequest;
@@ -55,6 +56,7 @@ class CheckpointLogServiceTest {
 
     @BeforeEach
     void setUp() {
+        TenantContext.setCurrent("test-tenant");
         LocalDateTime now = LocalDateTime.of(2026, 8, 10, 10, 0);
 
         entity = CheckpointLog.builder()
@@ -154,7 +156,7 @@ class CheckpointLogServiceTest {
     void getAll_shouldReturnPagedCheckpoints() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<CheckpointLog> page = new PageImpl<>(List.of(entity), pageable, 1);
-        when(repository.findAll(pageable)).thenReturn(page);
+        when(repository.findByTenantId("test-tenant", pageable)).thenReturn(page);
         when(mapper.toDto(entity)).thenReturn(dto);
 
         Page<CheckpointLogDto> result = service.getAll(pageable);
@@ -167,13 +169,13 @@ class CheckpointLogServiceTest {
     void getByPackageId_shouldReturnPagedCheckpoints() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<CheckpointLog> page = new PageImpl<>(List.of(entity), pageable, 1);
-        when(repository.findByPackageIdOrderByCheckpointTimeDesc(1L, pageable)).thenReturn(page);
+        when(repository.findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(1L, "test-tenant", pageable)).thenReturn(page);
         when(mapper.toDto(entity)).thenReturn(dto);
 
         Page<CheckpointLogDto> result = service.getByPackageId(1L, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0)).isEqualTo(dto);
-        verify(repository).findByPackageIdOrderByCheckpointTimeDesc(1L, pageable);
+        verify(repository).findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(1L, "test-tenant", pageable);
     }
 }

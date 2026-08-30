@@ -6,11 +6,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-
 @Repository
 public interface CheckpointLogRepository extends JpaRepository<CheckpointLog, Long> {
 
     Page<CheckpointLog> findByPackageIdOrderByCheckpointTimeDesc(Long packageId, Pageable pageable);
 
     Page<CheckpointLog> findByLocationId(String locationId, Pageable pageable);
+
+    Page<CheckpointLog> findByTenantId(String tenantId, Pageable pageable);
+
+    Page<CheckpointLog> findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(Long packageId, String tenantId, Pageable pageable);
 }
