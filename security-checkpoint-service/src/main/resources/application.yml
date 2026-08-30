@@ -95,3 +95,8 @@ management:
       enabled: true
     circuitbreakerevents:
       enabled: true
+
+# ── JWT Resource Server ──
+jwt:
+  secret: ${JWT_SECRET:cbs-dev-secret-key-must-be-replaced-in-prod}
+  # En prod, utiliser jwt.jwk-set-uri: https://idp.example.com/realms/cbs/protocol/openid-connect/certs

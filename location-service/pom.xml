@@ -90,6 +90,10 @@
 
 
 
+        <dependency>
+            <groupId>com.securetrack</groupId>
+            <artifactId>common-security</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

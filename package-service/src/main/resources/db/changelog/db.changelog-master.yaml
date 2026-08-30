@@ -72,3 +72,6 @@ databaseChangeLog:
                   defaultValueNumeric: 0
                   constraints:
                     nullable: false
+  - include:
+      file: 003-add-tenant-id.yaml
+      relativeToChangelogFile: true

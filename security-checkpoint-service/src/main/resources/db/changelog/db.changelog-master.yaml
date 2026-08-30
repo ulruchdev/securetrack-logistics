@@ -50,3 +50,6 @@ databaseChangeLog:
               - column:
                   name: created_by
                   type: VARCHAR(255)
+  - include:
+      file: 002-add-tenant-id.yaml
+      relativeToChangelogFile: true

@@ -20,6 +20,9 @@ public class CheckpointLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false) 
+    private String tenantId;
+
     @Column(nullable = false)
     private Long packageId;
 

@@ -1,4 +1,4 @@
-package com.cbs.logistics.tracking_service.config;
+package com.cbs.logistics.package_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,10 +9,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Sécurité JWT Resource Server pour le Tracking Service.
+ * Sécurité JWT Resource Server pour le Package Service.
  *
- * <p>Remplace l'ancienne Basic Auth in-memory par un validateur JWT
- * fourni par le module common-security.</p>
+ * <p>Nouveau pour ce service — auparavant sans aucune authentification.</p>
  */
 @EnableWebSecurity
 @Configuration
