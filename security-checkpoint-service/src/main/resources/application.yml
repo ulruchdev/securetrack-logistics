@@ -6,7 +6,7 @@ spring:
     name: security-checkpoint-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/cbsdb
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/cbsdb}
     username: ${DB_USERNAME:cbsuser}
     password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable DB_PASSWORD
     driver-class-name: org.postgresql.Driver

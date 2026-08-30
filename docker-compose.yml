@@ -1,17 +1,224 @@
+# ============================================================
+#  CBS Logistics - Docker Compose Unifié
+#
+#  Infrastructure : PostgreSQL + MongoDB + Redis + RabbitMQ
+#  Applications   : Package | Location | SecurityCheckpoint | Tracking
+#
+#  Lancement :
+#    Infrastructure seule :  docker compose up -d
+#    Tout (infra + apps)  :  docker compose --profile full up -d
+#
+#  Secrets : variables dans .env (copier .env.example → .env)
+# ============================================================
 
 services:
+
+  # ──────────────────────────────────────────────────────────
+  #  INFRASTRUCTURE
+  # ──────────────────────────────────────────────────────────
+
   postgres:
-    image: postgres:16-alpine
-    container_name: securetrack-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-securetrack}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    image: postgres:15-alpine
+    container_name: cbs-postgres
     ports:
-      - "${POSTGRES_HOST_PORT:-5432}:5432"
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cbsuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+      POSTGRES_DB: ${POSTGRES_DB:-cbsdb}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cbsuser} -d ${POSTGRES_DB:-cbsdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mongodb:
+    image: mongo:7
+    container_name: cbs-mongodb
+    ports:
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-cbsuser}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD requis}
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    container_name: cbs-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: cbs-rabbitmq
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-cbsuser}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD requis}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ──────────────────────────────────────────────────────────
+  #  APPLICATIONS (profil "full")
+  # ──────────────────────────────────────────────────────────
+
+  package-service:
+    build:
+      context: .
+      dockerfile: package-service/Dockerfile
+    container_name: cbs-package
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cbsdb}
+      DB_USERNAME: ${POSTGRES_USER:-cbsuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-cbsuser}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD requis}
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    profiles:
+      - full
+
+  location-service:
+    build:
+      context: .
+      dockerfile: location-service/Dockerfile
+    container_name: cbs-location
+    ports:
+      - "127.0.0.1:8082:8082"
+    environment:
+      MONGO_URI: mongodb://${MONGO_USER:-cbsuser}:${MONGO_PASSWORD:?MONGO_PASSWORD requis}@mongodb:27017/cbsdb?authSource=admin
+      PACKAGE_SERVICE_URL: http://package-service:8081
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      package-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    profiles:
+      - full
+
+  security-checkpoint-service:
+    build:
+      context: .
+      dockerfile: security-checkpoint-service/Dockerfile
+    container_name: cbs-checkpoint
+    ports:
+      - "127.0.0.1:8083:8083"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cbsdb}
+      DB_USERNAME: ${POSTGRES_USER:-cbsuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOCATION_SERVICE_URL: http://location-service:8082
+      SECURITY_USERNAME: ${SECURITY_USERNAME:-admin}
+      SECURITY_PASSWORD: ${SECURITY_PASSWORD:?SECURITY_PASSWORD requis}
+      SECURITY_REQUIRE_HTTPS: "false"
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      location-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    profiles:
+      - full
+
+  tracking-service:
+    build:
+      context: .
+      dockerfile: tracking-service/Dockerfile
+    container_name: cbs-tracking
+    ports:
+      - "127.0.0.1:8084:8084"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cbsdb}
+      DB_USERNAME: ${POSTGRES_USER:-cbsuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-cbsuser}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD requis}
+      SECURITY_USERNAME: ${SECURITY_USERNAME:-admin}
+      SECURITY_PASSWORD: ${SECURITY_PASSWORD:?SECURITY_PASSWORD requis}
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    profiles:
+      - full
 
 volumes:
   postgres_data:
+  mongo_data:
+  redis_data:
+  rabbitmq_data:

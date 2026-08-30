@@ -1,24 +1,53 @@
-# IntelliJ IDEA
+# ============================================================
+#  CBS Logistics - SecureTrack
+# ============================================================
+
+# --- IDE ---
 .idea/
 *.iml
+.vscode/
+*.swp
+*.swo
+*~
 
-# Maven
+# --- Java / Maven ---
 target/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
 
-# Logs
-*.log
+# --- Spring Boot ---
+*.pid
 
-# Documentation interne client - NE JAMAIS POUSSER
-documentation/
-
-# ===== Fichiers .env locaux (secrets, NE JAMAIS COMMITTER) =====
+# --- Docker / Secrets ---
+.env
 common/.env
+!common/.env.example
 
-# ===== Artefacts Python (tests generate-combined-openapi) =====
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Node (docs/frontend si besoin) ---
+node_modules/
+dist/
+.next/
+
+# --- Python (docs/scripts) ---
 __pycache__/
 *.pyc
-*.cover
 .coverage
+htmlcov/
+.venv/
+venv/
 
-# ===== Ancien dossier de travail (structure aplatie : ne plus versionner) =====
+# --- JaCoCo ---
+*.exec
+
+# --- Documentation interne client - NE JAMAIS POUSSER ---
+documentation/
+
+# --- Ancien dossier de travail ---
 project-1-logistics/
