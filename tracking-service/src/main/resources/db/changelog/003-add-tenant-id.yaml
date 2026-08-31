@@ -17,12 +17,13 @@ databaseChangeLog:
               - column:
                   name: tenant_id
                   type: VARCHAR(255)
-                  constraints:
-                    nullable: false
+                  defaultValue: 'default'
         - addDefaultValue:
             tableName: tracking_history
             columnName: tenant_id
             defaultValue: 'default'
+        - sql:
+            sql: ALTER TABLE tracking_history ALTER COLUMN tenant_id SET NOT NULL
         - createIndex:
             tableName: tracking_history
             indexName: idx_tracking_tenant_id

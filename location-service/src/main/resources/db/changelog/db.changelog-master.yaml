@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: 001-create-sites-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 002-create-checkpoints-table.yaml
+      relativeToChangelogFile: true
