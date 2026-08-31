@@ -1,4 +1,19 @@
-# CBS Logistics - Documentation API
+# CBS Logistics / SecureTrack — Documentation
+
+## Produit commercial (référence PO)
+
+Les documents suivants décrivent le **produit vendable** et le plan de mise à niveau (backend + frontend). Ils priment sur ce README pour le périmètre métier.
+
+- [Produit — index](produit/README.md)
+- [01 — Produit commercial](produit/01-produit-commercial.md)
+- [02 — Backend : failles et correctifs](produit/02-backend-remediation.md)
+- [03 — Frontend : consommation web + mobile](produit/03-frontend-consommation.md)
+
+---
+
+# Documentation API (état actuel du dépôt)
+
+Les YAML ci-dessous décrivent l’API **d’onboarding** (ports 8081–8084), pas encore le Gateway `/v1` du document produit 02.
 
 Ce dossier contient les spécifications OpenAPI 3.0.3 pour tous les microservices du système CBS Logistics.
 
