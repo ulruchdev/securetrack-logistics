@@ -9,6 +9,7 @@ package com.cbs.logistics.common.dto;
  */
 public record PackageDto(
         Long packageId,
+        String trackingNumber,
         String description,
         String packageName,
         String packageType,

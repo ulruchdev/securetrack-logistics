@@ -1,6 +1,7 @@
 package com.cbs.logistics.security_checkpoint_service.service;
 
 import com.cbs.logistics.common.security.context.TenantContext;
+import com.cbs.logistics.security_checkpoint_service.client.PackageServiceClient;
 import com.cbs.logistics.security_checkpoint_service.dto.CheckpointLogDto;
 import com.cbs.logistics.security_checkpoint_service.entity.CheckpointLog;
 import com.cbs.logistics.security_checkpoint_service.entity.CheckpointResult;
@@ -33,13 +34,14 @@ class TenantIsolationTest {
     @Mock private CheckpointLogRepository repository;
     @Mock private CheckpointLogMapper mapper;
     @Mock private LocationAvailabilityPort locationAvailabilityPort;
+    @Mock private PackageServiceClient packageServiceClient;
     @InjectMocks private CheckpointLogService service;
 
     private CheckpointLogDto dtoA;
 
     @BeforeEach
     void setUp() {
-        dtoA = new CheckpointLogDto(1L, 1L, "loc-1",
+        dtoA = new CheckpointLogDto(1L, "ST-ABCDEF12", 10L,
                 LocalDateTime.of(2026, 8, 10, 10, 0),
                 CheckpointResult.OK, "Passage OK", "agent-1");
     }
@@ -53,6 +55,8 @@ class TenantIsolationTest {
         var pageable = PageRequest.of(0, 10);
         CheckpointLog entityA = new CheckpointLog();
         entityA.setId(1L);
+        entityA.setTrackingNumber("ST-ABCDEF12");
+        entityA.setCheckpointId(10L);
         entityA.setTenantId(TENANT_A);
         Page<CheckpointLog> page = new PageImpl<>(List.of(entityA), pageable, 1);
 
@@ -79,34 +83,34 @@ class TenantIsolationTest {
     }
 
     @Test
-    void getByPackageId_shouldOnlyReturnOwnTenantData() {
+    void getByTrackingNumber_shouldOnlyReturnOwnTenantData() {
         TenantContext.setCurrent(TENANT_A);
         var pageable = PageRequest.of(0, 10);
         CheckpointLog entityA = new CheckpointLog();
         entityA.setId(1L);
-        entityA.setPackageId(1L);
+        entityA.setTrackingNumber("ST-ABCDEF12");
         entityA.setTenantId(TENANT_A);
         Page<CheckpointLog> page = new PageImpl<>(List.of(entityA), pageable, 1);
 
-        when(repository.findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(1L, TENANT_A, pageable))
+        when(repository.findByTrackingNumberAndTenantIdOrderByCheckpointTimeDesc("ST-ABCDEF12", TENANT_A, pageable))
                 .thenReturn(page);
         when(mapper.toDto(entityA)).thenReturn(dtoA);
 
-        var result = service.getByPackageId(1L, pageable);
+        var result = service.getByTrackingNumber("ST-ABCDEF12", pageable);
 
         assertThat(result.getContent()).hasSize(1);
     }
 
     @Test
-    void getByPackageId_shouldReturnEmpty_whenOtherTenantHasData() {
+    void getByTrackingNumber_shouldReturnEmpty_whenOtherTenantHasData() {
         TenantContext.setCurrent(TENANT_B);
         var pageable = PageRequest.of(0, 10);
         Page<CheckpointLog> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-        when(repository.findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(1L, TENANT_B, pageable))
+        when(repository.findByTrackingNumberAndTenantIdOrderByCheckpointTimeDesc("ST-ABCDEF12", TENANT_B, pageable))
                 .thenReturn(emptyPage);
 
-        var result = service.getByPackageId(1L, pageable);
+        var result = service.getByTrackingNumber("ST-ABCDEF12", pageable);
 
         assertThat(result.getContent()).isEmpty();
     }

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 
 @Slf4j
@@ -27,8 +28,11 @@ public class PackageService {
     private final PackageMapper packageMapper;
     private final RabbitTemplate rabbitTemplate;
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     public PackageDto create(CreatePackageRequest request) {
         Package entity = packageMapper.toEntity(request);
+        entity.setTrackingNumber(generateTrackingNumber());
         entity.setPackageStatus(PackageStatus.NEW);
         entity.setTenantId(TenantContext.getCurrent());
         Package savedEntity = packageRepository.save(entity);
@@ -72,12 +76,32 @@ public class PackageService {
         return packageMapper.toDto(entity);
     }
 
+    public PackageDto getByTrackingNumber(String trackingNumber) {
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByTrackingNumberAndTenantId(trackingNumber, tenantId)
+                .orElseThrow(() -> new PackageNotFoundException(trackingNumber));
+        return packageMapper.toDto(entity);
+    }
+
     public void delete(Long id) {
         String tenantId = TenantContext.getCurrent();
         if (!packageRepository.existsByPackageIdAndTenantId(id, tenantId)) {
             throw new PackageNotFoundException(id);
         }
         packageRepository.deleteById(id);
+    }
+
+    /**
+     * Génère un tracking number unique au format ST-XXXXXXXX.
+     * 8 caractères alphanumériques (A-Z, 0-9) générés de façon cryptographiquement sûre.
+     */
+    private String generateTrackingNumber() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder("ST-");
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(SECURE_RANDOM.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     private void validateStatusTransition(PackageStatus currentStatus, PackageStatus newStatus) {

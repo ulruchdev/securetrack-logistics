@@ -138,7 +138,7 @@ class TenantIsolationTest {
         request.setPackageId(2L);
         request.setCity("Lyon");
 
-        when(packageServiceClient.getPackageById(anyLong())).thenReturn(new PackageDto(2L, "pkg", null, null, 1.0, false, "NEW"));
+        when(packageServiceClient.getPackageById(anyLong())).thenReturn(new PackageDto(2L, "ST-PKG00001", "pkg", null, null, 1.0, false, "NEW"));
         when(locationMapper.toEntity(request)).thenReturn(location);
         when(locationRepository.save(any())).thenReturn(location);
         when(locationMapper.toDto(any())).thenReturn(dtoA);

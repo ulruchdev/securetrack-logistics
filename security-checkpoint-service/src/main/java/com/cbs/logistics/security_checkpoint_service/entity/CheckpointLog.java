@@ -20,14 +20,16 @@ public class CheckpointLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false) 
+    @Column(nullable = false)
     private String tenantId;
 
+    /** Numéro de suivi du colis (format ST-XXXXXXXX), lookup via Package Service. */
     @Column(nullable = false)
-    private Long packageId;
+    private String trackingNumber;
 
+    /** ID du checkpoint (point de contrôle physique) dans le Location Service. */
     @Column(nullable = false)
-    private String locationId;
+    private Long checkpointId;
 
     @Column(nullable = false)
     private LocalDateTime checkpointTime;
@@ -38,6 +40,8 @@ public class CheckpointLog {
 
     private String comment;
 
+    /** Identifiant de l'agent (extrait du JWT sub claim). */
+    @Column(nullable = false)
     private String createdBy;
 
     @PrePersist

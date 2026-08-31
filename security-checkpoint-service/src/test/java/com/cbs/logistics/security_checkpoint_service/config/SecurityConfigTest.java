@@ -34,7 +34,7 @@ class SecurityConfigTest {
     @Test
     void endpointAccessible_whenFiltersDisabled() throws Exception {
         CheckpointLogDto dto = new CheckpointLogDto(
-                1L, 1L, "loc-1",
+                1L, "ST-ABCDEF12", 10L,
                 LocalDateTime.of(2026, 8, 10, 10, 0),
                 CheckpointResult.OK, "Passage OK", "agent-1");
         PageImpl<CheckpointLogDto> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);

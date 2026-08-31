@@ -14,4 +14,6 @@ public interface PackageRepository extends JpaRepository<Package, Long> {
     Optional<Package> findByPackageIdAndTenantId(Long packageId, String tenantId);
 
     boolean existsByPackageIdAndTenantId(Long packageId, String tenantId);
+
+    Optional<Package> findByTrackingNumberAndTenantId(String trackingNumber, String tenantId);
 }

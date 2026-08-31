@@ -21,27 +21,27 @@ class LocationAvailabilityAdapterTest {
     private LocationAvailabilityAdapter adapter;
 
     @Test
-    void getLocation_shouldMapDtoToPortRecord() {
-        LocationServiceClient.LocationDto dto =
-                new LocationServiceClient.LocationDto("loc-1", 7L, "Paris", "ZONE_A", true);
-        when(locationServiceClient.getLocationById("loc-1")).thenReturn(dto);
+    void getCheckpointAvailability_shouldMapDtoToPortRecord() {
+        LocationServiceClient.CheckpointDto dto =
+                new LocationServiceClient.CheckpointDto(10L, 1L, "Checkpoint A", true);
+        when(locationServiceClient.getCheckpointById(10L)).thenReturn(dto);
 
-        LocationAvailabilityPort.LocationAvailability result = adapter.getLocation("loc-1");
+        LocationAvailabilityPort.CheckpointAvailability result = adapter.getCheckpointAvailability(10L);
 
-        assertThat(result.packageId()).isEqualTo(7L);
-        assertThat(result.checkpointAvailable()).isTrue();
-        verify(locationServiceClient).getLocationById("loc-1");
+        assertThat(result.active()).isTrue();
+        assertThat(result.siteId()).isEqualTo(1L);
+        verify(locationServiceClient).getCheckpointById(10L);
     }
 
     @Test
-    void getLocation_shouldMapUnavailableCheckpoint() {
-        LocationServiceClient.LocationDto dto =
-                new LocationServiceClient.LocationDto("loc-2", 8L, "Lyon", "ZONE_B", false);
-        when(locationServiceClient.getLocationById("loc-2")).thenReturn(dto);
+    void getCheckpointAvailability_shouldMapUnavailableCheckpoint() {
+        LocationServiceClient.CheckpointDto dto =
+                new LocationServiceClient.CheckpointDto(20L, 2L, "Checkpoint B", false);
+        when(locationServiceClient.getCheckpointById(20L)).thenReturn(dto);
 
-        LocationAvailabilityPort.LocationAvailability result = adapter.getLocation("loc-2");
+        LocationAvailabilityPort.CheckpointAvailability result = adapter.getCheckpointAvailability(20L);
 
-        assertThat(result.packageId()).isEqualTo(8L);
-        assertThat(result.checkpointAvailable()).isFalse();
+        assertThat(result.active()).isFalse();
+        assertThat(result.siteId()).isEqualTo(2L);
     }
 }

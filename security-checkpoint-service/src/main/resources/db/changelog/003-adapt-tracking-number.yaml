@@ -1,0 +1,42 @@
+databaseChangeLog:
+  # ── V3 : Remplacer packageId/locationId par trackingNumber/checkpointId ──
+  - changeSet:
+      id: 3-add-tracking-number-checkpoint-id
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: checkpoint_logs
+        - not:
+            - columnExists:
+                tableName: checkpoint_logs
+                columnName: tracking_number
+      changes:
+        # Ajouter tracking_number
+        - addColumn:
+            tableName: checkpoint_logs
+            columns:
+              - column:
+                  name: tracking_number
+                  type: VARCHAR(255)
+                  defaultValue: 'UNKNOWN'
+        # Ajouter checkpoint_id
+        - addColumn:
+            tableName: checkpoint_logs
+            columns:
+              - column:
+                  name: checkpoint_id
+                  type: BIGINT
+                  defaultValueNumeric: 0
+        # Rendre les nouvelles colonnes NOT NULL après ajout des defaults
+        - sql:
+            sql: ALTER TABLE checkpoint_logs ALTER COLUMN tracking_number SET NOT NULL
+        - sql:
+            sql: ALTER TABLE checkpoint_logs ALTER COLUMN checkpoint_id SET NOT NULL
+        # Index sur tracking_number pour les recherches fréquentes
+        - createIndex:
+            tableName: checkpoint_logs
+            indexName: idx_checkpoint_tracking_number
+            columns:
+              - column:
+                  name: tracking_number

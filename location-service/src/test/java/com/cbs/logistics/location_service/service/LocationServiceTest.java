@@ -72,7 +72,7 @@ class LocationServiceTest {
         createRequest.setZone("ZONE_A");
         createRequest.setCheckpointAvailable(true);
 
-        packageDto = new PackageDto(1L, "Colis test", "Colis", "STANDARD", 2.5, false, "NEW");
+        packageDto = new PackageDto(1L, "ST-ABCDEF12", "Colis test", "Colis", "STANDARD", 2.5, false, "NEW");
     }
 
     @Test

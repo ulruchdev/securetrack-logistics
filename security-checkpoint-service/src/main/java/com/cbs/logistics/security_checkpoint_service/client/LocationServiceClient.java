@@ -7,14 +7,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "location-service", url = "${location-service.url:http://localhost:8082}")
 public interface LocationServiceClient {
 
-    @GetMapping("/api/locations/{id}")
-    LocationDto getLocationById(@PathVariable String id);
+    @GetMapping("/api/checkpoints/{id}")
+    CheckpointDto getCheckpointById(@PathVariable Long id);
 
     /**
-     * DTO du contrat Location Service (GET /api/locations/{id}).
-     * packageId : colis rattaché à la localisation (utilisé pour vérifier que le
-     * checkpoint concerne bien le même colis que la requête).
-     * checkpointAvailable : boolean primitif — si absent, désérialisation en false.
+     * DTO du contrat Location Service (GET /api/checkpoints/{id}).
+     * Utilisé pour vérifier qu'un checkpoint existe et est actif
+     * avant d'enregistrer un scan.
      */
-    record LocationDto(String locationId, Long packageId, String city, String zone, boolean checkpointAvailable) {}
+    record CheckpointDto(Long id, Long siteId, String name, boolean active) {}
 }

@@ -53,3 +53,6 @@ databaseChangeLog:
   - include:
       file: 002-add-tenant-id.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 003-adapt-tracking-number.yaml
+      relativeToChangelogFile: true

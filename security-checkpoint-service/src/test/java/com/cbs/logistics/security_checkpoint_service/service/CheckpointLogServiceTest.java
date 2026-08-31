@@ -1,6 +1,7 @@
 package com.cbs.logistics.security_checkpoint_service.service;
 import com.cbs.logistics.common.security.context.TenantContext;
 
+import com.cbs.logistics.security_checkpoint_service.client.PackageServiceClient;
 import com.cbs.logistics.security_checkpoint_service.dto.CheckpointLogDto;
 import com.cbs.logistics.security_checkpoint_service.dto.CreateCheckpointRequest;
 import com.cbs.logistics.security_checkpoint_service.entity.CheckpointLog;
@@ -45,14 +46,17 @@ class CheckpointLogServiceTest {
     @Mock
     private LocationAvailabilityPort locationAvailabilityPort;
 
+    @Mock
+    private PackageServiceClient packageServiceClient;
+
     @InjectMocks
     private CheckpointLogService service;
 
     private CheckpointLog entity;
     private CheckpointLogDto dto;
     private CreateCheckpointRequest request;
-    private LocationAvailabilityPort.LocationAvailability availableLocation;
-    private LocationAvailabilityPort.LocationAvailability unavailableLocation;
+    private LocationAvailabilityPort.CheckpointAvailability availableCheckpoint;
+    private LocationAvailabilityPort.CheckpointAvailability unavailableCheckpoint;
 
     @BeforeEach
     void setUp() {
@@ -61,32 +65,34 @@ class CheckpointLogServiceTest {
 
         entity = CheckpointLog.builder()
                 .id(1L)
-                .packageId(1L)
-                .locationId("loc-1")
+                .trackingNumber("ST-ABCDEF12")
+                .checkpointId(10L)
                 .checkpointTime(now)
                 .result(CheckpointResult.OK)
                 .comment("Passage OK")
                 .createdBy("agent-1")
                 .build();
 
-        dto = new CheckpointLogDto(1L, 1L, "loc-1", now, CheckpointResult.OK, "Passage OK", "agent-1");
+        dto = new CheckpointLogDto(1L, "ST-ABCDEF12", 10L, now, CheckpointResult.OK, "Passage OK", "agent-1");
 
-        request = new CreateCheckpointRequest();
-        request.setPackageId(1L);
-        request.setLocationId("loc-1");
-        request.setCheckpointTime(now);
-        request.setResult(CheckpointResult.OK);
-        request.setComment("Passage OK");
-        request.setCreatedBy("agent-1");
+        request = CreateCheckpointRequest.builder()
+                .trackingNumber("ST-ABCDEF12")
+                .checkpointId(10L)
+                .checkpointTime(now)
+                .result(CheckpointResult.OK)
+                .comment("Passage OK")
+                .build();
 
-        // packageId, checkpointAvailable
-        availableLocation = new LocationAvailabilityPort.LocationAvailability(1L, true);
-        unavailableLocation = new LocationAvailabilityPort.LocationAvailability(1L, false);
+        // checkpoint active, siteId
+        availableCheckpoint = new LocationAvailabilityPort.CheckpointAvailability(true, 1L);
+        unavailableCheckpoint = new LocationAvailabilityPort.CheckpointAvailability(false, 1L);
     }
 
     @Test
-    void create_shouldSaveCheckpoint_whenLocationAvailable() {
-        when(locationAvailabilityPort.getLocation("loc-1")).thenReturn(availableLocation);
+    void create_shouldSaveCheckpoint_whenCheckpointAvailable() {
+        when(packageServiceClient.getPackageByTrackingNumber("ST-ABCDEF12"))
+                .thenReturn(new PackageServiceClient.PackageDto(1L, "ST-ABCDEF12"));
+        when(locationAvailabilityPort.getCheckpointAvailability(10L)).thenReturn(availableCheckpoint);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toDto(entity)).thenReturn(dto);
@@ -94,40 +100,55 @@ class CheckpointLogServiceTest {
         CheckpointLogDto result = service.create(request);
 
         assertThat(result).isEqualTo(dto);
-        verify(locationAvailabilityPort).getLocation("loc-1");
+        verify(packageServiceClient).getPackageByTrackingNumber("ST-ABCDEF12");
+        verify(locationAvailabilityPort).getCheckpointAvailability(10L);
         verify(repository).save(entity);
     }
 
     @Test
     void create_shouldThrow_whenCheckpointNotAvailable() {
-        when(locationAvailabilityPort.getLocation("loc-1")).thenReturn(unavailableLocation);
+        when(packageServiceClient.getPackageByTrackingNumber("ST-ABCDEF12"))
+                .thenReturn(new PackageServiceClient.PackageDto(1L, "ST-ABCDEF12"));
+        when(locationAvailabilityPort.getCheckpointAvailability(10L)).thenReturn(unavailableCheckpoint);
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(CheckpointUnavailableException.class)
-                .hasMessageContaining("loc-1");
+                .hasMessageContaining("10");
 
         verify(repository, never()).save(any());
     }
 
     @Test
-    void create_shouldThrow_whenLocationBelongsToAnotherPackage() {
-        LocationAvailabilityPort.LocationAvailability otherPackageLocation =
-                new LocationAvailabilityPort.LocationAvailability(2L, true);
-        when(locationAvailabilityPort.getLocation("loc-1")).thenReturn(otherPackageLocation);
+    void create_shouldPropagate_whenPackageNotFound() {
+        when(packageServiceClient.getPackageByTrackingNumber("ST-UNKNOWN"))
+                .thenThrow(new LocationNotFoundException("Package not found"));
 
-        assertThatThrownBy(() -> service.create(request))
-                .isInstanceOf(com.cbs.logistics.security_checkpoint_service.exception.LocationPackageMismatchException.class)
-                .hasMessageContaining("colis 2");
+        CreateCheckpointRequest badRequest = CreateCheckpointRequest.builder()
+                .trackingNumber("ST-UNKNOWN")
+                .checkpointId(10L)
+                .result(CheckpointResult.OK)
+                .build();
+
+        assertThatThrownBy(() -> service.create(badRequest))
+                .isInstanceOf(LocationNotFoundException.class);
 
         verify(repository, never()).save(any());
     }
 
     @Test
-    void create_shouldPropagate_whenLocationNotFound() {
-        when(locationAvailabilityPort.getLocation("loc-1"))
-                .thenThrow(new LocationNotFoundException("La localisation demandée n'existe pas"));
+    void create_shouldPropagate_whenCheckpointNotFound() {
+        when(packageServiceClient.getPackageByTrackingNumber("ST-ABCDEF12"))
+                .thenReturn(new PackageServiceClient.PackageDto(1L, "ST-ABCDEF12"));
+        when(locationAvailabilityPort.getCheckpointAvailability(99L))
+                .thenThrow(new LocationNotFoundException("Checkpoint not found"));
 
-        assertThatThrownBy(() -> service.create(request))
+        CreateCheckpointRequest badRequest = CreateCheckpointRequest.builder()
+                .trackingNumber("ST-ABCDEF12")
+                .checkpointId(99L)
+                .result(CheckpointResult.OK)
+                .build();
+
+        assertThatThrownBy(() -> service.create(badRequest))
                 .isInstanceOf(LocationNotFoundException.class);
 
         verify(repository, never()).save(any());
@@ -166,16 +187,18 @@ class CheckpointLogServiceTest {
     }
 
     @Test
-    void getByPackageId_shouldReturnPagedCheckpoints() {
+    void getByTrackingNumber_shouldReturnPagedCheckpoints() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<CheckpointLog> page = new PageImpl<>(List.of(entity), pageable, 1);
-        when(repository.findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(1L, "test-tenant", pageable)).thenReturn(page);
+        when(repository.findByTrackingNumberAndTenantIdOrderByCheckpointTimeDesc(
+                "ST-ABCDEF12", "test-tenant", pageable)).thenReturn(page);
         when(mapper.toDto(entity)).thenReturn(dto);
 
-        Page<CheckpointLogDto> result = service.getByPackageId(1L, pageable);
+        Page<CheckpointLogDto> result = service.getByTrackingNumber("ST-ABCDEF12", pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0)).isEqualTo(dto);
-        verify(repository).findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(1L, "test-tenant", pageable);
+        verify(repository).findByTrackingNumberAndTenantIdOrderByCheckpointTimeDesc(
+                "ST-ABCDEF12", "test-tenant", pageable);
     }
 }

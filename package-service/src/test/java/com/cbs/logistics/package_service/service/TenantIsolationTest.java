@@ -50,7 +50,7 @@ class TenantIsolationTest {
         entityA.setTenantId(TENANT_A);
         entityA.setDescription("Package belonging to Tenant A");
         entityA.setPackageStatus(PackageStatus.NEW);
-        dtoA = new PackageDto(1L, "Package belonging to Tenant A", null, null, 2.5, false, "NEW");
+        dtoA = new PackageDto(1L, "ST-ABCDEF12", "Package belonging to Tenant A", null, null, 2.5, false, "NEW");
     }
 
     @AfterEach

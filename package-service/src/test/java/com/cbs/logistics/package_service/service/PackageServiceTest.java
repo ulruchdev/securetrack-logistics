@@ -65,7 +65,7 @@ class PackageServiceTest {
         packageEntity.setFragile(true);
         packageEntity.setPackageStatus(PackageStatus.NEW);
 
-        packageDto = new PackageDto(1L, "Test Package", null, null, 2.5, true, "NEW");
+        packageDto = new PackageDto(1L, "ST-ABCDEF12", "Test Package", null, null, 2.5, true, "NEW");
 
         createRequest = new CreatePackageRequest();
         createRequest.setDescription("Test Package");

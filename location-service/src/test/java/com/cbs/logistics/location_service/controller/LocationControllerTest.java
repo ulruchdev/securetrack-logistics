@@ -198,7 +198,7 @@ class LocationControllerTest {
     @Test
     void getLocationByPackageId_shouldReturn200() throws Exception {
         LocationDto locationDto = new LocationDto("loc-1", 1L, "Paris", "ZONE_A", true);
-        PackageDto packageDto = new PackageDto(1L, "Colis test", "Colis", "STANDARD", 2.5, false, "NEW");
+        PackageDto packageDto = new PackageDto(1L, "ST-ABCDEF12", "Colis test", "Colis", "STANDARD", 2.5, false, "NEW");
         EnrichedLocationDto enriched = new EnrichedLocationDto(locationDto, packageDto);
         when(locationService.getByPackageId(1L)).thenReturn(enriched);
 

@@ -1,12 +1,12 @@
 package com.cbs.logistics.security_checkpoint_service.service;
 
 import com.cbs.logistics.common.security.context.TenantContext;
+import com.cbs.logistics.security_checkpoint_service.client.PackageServiceClient;
 import com.cbs.logistics.security_checkpoint_service.dto.CheckpointLogDto;
 import com.cbs.logistics.security_checkpoint_service.dto.CreateCheckpointRequest;
 import com.cbs.logistics.security_checkpoint_service.entity.CheckpointLog;
 import com.cbs.logistics.security_checkpoint_service.exception.CheckpointLogNotFoundException;
 import com.cbs.logistics.security_checkpoint_service.exception.CheckpointUnavailableException;
-import com.cbs.logistics.security_checkpoint_service.exception.LocationPackageMismatchException;
 import com.cbs.logistics.security_checkpoint_service.mapper.CheckpointLogMapper;
 import com.cbs.logistics.security_checkpoint_service.port.LocationAvailabilityPort;
 import com.cbs.logistics.security_checkpoint_service.repository.CheckpointLogRepository;
@@ -15,6 +15,8 @@ import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,24 +26,31 @@ public class CheckpointLogService {
     private final CheckpointLogRepository repository;
     private final CheckpointLogMapper mapper;
     private final LocationAvailabilityPort locationAvailabilityPort;
+    private final PackageServiceClient packageServiceClient;
 
     @CircuitBreaker(name = "locationService")
     @Retry(name = "locationService")
     public CheckpointLogDto create(CreateCheckpointRequest request) {
 
-        LocationAvailabilityPort.LocationAvailability location =
-                locationAvailabilityPort.getLocation(request.getLocationId());
+        // 1. Valider que le colis existe par trackingNumber via Package Service
+        packageServiceClient.getPackageByTrackingNumber(request.getTrackingNumber());
 
-        if (!java.util.Objects.equals(location.packageId(), request.getPackageId())) {
-            throw new LocationPackageMismatchException(request.getLocationId(), request.getPackageId(), location.packageId());
+        // 2. Valider que le checkpoint est actif via Location Service
+        LocationAvailabilityPort.CheckpointAvailability checkpoint =
+                locationAvailabilityPort.getCheckpointAvailability(request.getCheckpointId());
+
+        if (!checkpoint.active()) {
+            throw new CheckpointUnavailableException(
+                    "Checkpoint not available: " + request.getCheckpointId());
         }
 
-        if (!location.checkpointAvailable()) {
-            throw new CheckpointUnavailableException("Checkpoint not available for location: " + request.getLocationId());
-        }
+        // 3. Extraire le createdBy du JWT sub claim
+        String createdBy = extractJwtSubject();
 
+        // 4. Construire et sauvegarder
         CheckpointLog entity = mapper.toEntity(request);
         entity.setTenantId(TenantContext.getCurrent());
+        entity.setCreatedBy(createdBy);
         CheckpointLog saved = repository.save(entity);
         return mapper.toDto(saved);
     }
@@ -57,8 +66,20 @@ public class CheckpointLogService {
         return repository.findByTenantId(tenantId, pageable).map(mapper::toDto);
     }
 
-    public Page<CheckpointLogDto> getByPackageId(Long packageId, Pageable pageable) {
+    public Page<CheckpointLogDto> getByTrackingNumber(String trackingNumber, Pageable pageable) {
         String tenantId = TenantContext.getCurrent();
-        return repository.findByPackageIdAndTenantIdOrderByCheckpointTimeDesc(packageId, tenantId, pageable).map(mapper::toDto);
+        return repository.findByTrackingNumberAndTenantIdOrderByCheckpointTimeDesc(
+                trackingNumber, tenantId, pageable).map(mapper::toDto);
+    }
+
+    /**
+     * Extrait le subject (sub) du JWT depuis le SecurityContext Spring Security.
+     */
+    private String extractJwtSubject() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getName() != null) {
+            return auth.getName();
+        }
+        return "unknown";
     }
 }

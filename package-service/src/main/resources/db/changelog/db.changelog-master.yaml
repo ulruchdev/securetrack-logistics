@@ -75,3 +75,6 @@ databaseChangeLog:
   - include:
       file: 003-add-tenant-id.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 004-add-tracking-number.yaml
+      relativeToChangelogFile: true
