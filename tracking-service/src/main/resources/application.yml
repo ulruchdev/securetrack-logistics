@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update   # Axon Framework crée ses tables via Hibernate (domain_event_entry, snapshot_event_entry, token_entry)
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -47,5 +47,5 @@ logging:
 
 # ── JWT Resource Server ──
 jwt:
-  secret: ${JWT_SECRET:cbs-dev-secret-key-must-be-replaced-in-prod}
+  secret: ${JWT_SECRET}
   # En prod, utiliser jwt.jwk-set-uri: https://idp.example.com/realms/cbs/protocol/openid-connect/certs

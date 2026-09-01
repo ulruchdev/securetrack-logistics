@@ -37,7 +37,7 @@ class TenantIsolationTest {
 
     @Mock private PackageRepository packageRepository;
     @Mock private PackageMapper packageMapper;
-    @Mock private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
+    @Mock private EventOutboxService eventOutboxService;
     @InjectMocks private PackageService packageService;
 
     private Package entityA;
@@ -71,14 +71,14 @@ class TenantIsolationTest {
     @Test
     void getById_shouldReturn404_whenAccessingOtherTenantData() {
         TenantContext.setCurrent(TENANT_B);
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_B)).thenReturn(Optional.empty());
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_B)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> packageService.getById(1L)).isInstanceOf(PackageNotFoundException.class);
     }
 
     @Test
     void update_shouldFail_whenAccessingOtherTenantData() {
         TenantContext.setCurrent(TENANT_B);
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_B)).thenReturn(Optional.empty());
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_B)).thenReturn(Optional.empty());
         UpdatePackageRequest request = new UpdatePackageRequest();
         request.setPackageStatus(PackageStatus.IN_TRANSIT);
         assertThatThrownBy(() -> packageService.update(1L, request)).isInstanceOf(PackageNotFoundException.class);
@@ -87,7 +87,7 @@ class TenantIsolationTest {
     @Test
     void delete_shouldFail_whenAccessingOtherTenantData() {
         TenantContext.setCurrent(TENANT_B);
-        when(packageRepository.existsByPackageIdAndTenantId(1L, TENANT_B)).thenReturn(false);
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_B)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> packageService.delete(1L)).isInstanceOf(PackageNotFoundException.class);
     }
 
@@ -96,11 +96,11 @@ class TenantIsolationTest {
         TenantContext.setCurrent(TENANT_A);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Package> page = new PageImpl<>(List.of(entityA), pageable, 1);
-        when(packageRepository.findByTenantId(TENANT_A, pageable)).thenReturn(page);
+        when(packageRepository.findByTenantIdAndDeletedAtIsNull(TENANT_A, pageable)).thenReturn(page);
         when(packageMapper.toDto(entityA)).thenReturn(dtoA);
         var result = packageService.getAll(pageable);
         assertThat(result.getContent()).hasSize(1);
-        verify(packageRepository).findByTenantId(TENANT_A, pageable);
+        verify(packageRepository).findByTenantIdAndDeletedAtIsNull(TENANT_A, pageable);
     }
 
     @Test
@@ -108,7 +108,7 @@ class TenantIsolationTest {
         TenantContext.setCurrent(TENANT_B);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Package> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        when(packageRepository.findByTenantId(TENANT_B, pageable)).thenReturn(emptyPage);
+        when(packageRepository.findByTenantIdAndDeletedAtIsNull(TENANT_B, pageable)).thenReturn(emptyPage);
         var result = packageService.getAll(pageable);
         assertThat(result.getContent()).isEmpty();
     }

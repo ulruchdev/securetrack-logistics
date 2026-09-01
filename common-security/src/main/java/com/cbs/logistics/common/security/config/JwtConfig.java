@@ -40,8 +40,7 @@ public class JwtConfig {
             SecretKey key = new SecretKeySpec(keyBytes, "HMACSHA256");
             return NimbusJwtDecoder.withSecretKey(key).build();
         }
-        // Fallback dev
-        byte[] fallbackKey = Base64.getEncoder().encode("cbs-dev-secret-key-must-be-replaced-in-prod".getBytes());
-        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(fallbackKey, "HMACSHA256")).build();
+        throw new IllegalStateException(
+                "Aucune clé JWT configurée. Définissez jwt.secret ou jwt.jwk-set-uri.");
     }
 }

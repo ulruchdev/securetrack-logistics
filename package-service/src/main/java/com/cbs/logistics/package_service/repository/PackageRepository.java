@@ -9,11 +9,11 @@ import java.util.Optional;
 
 public interface PackageRepository extends JpaRepository<Package, Long> {
 
-    Page<Package> findByTenantId(String tenantId, Pageable pageable);
+    Page<Package> findByTenantIdAndDeletedAtIsNull(String tenantId, Pageable pageable);
 
-    Optional<Package> findByPackageIdAndTenantId(Long packageId, String tenantId);
+    Optional<Package> findByPackageIdAndTenantIdAndDeletedAtIsNull(Long packageId, String tenantId);
 
-    boolean existsByPackageIdAndTenantId(Long packageId, String tenantId);
+    boolean existsByPackageIdAndTenantIdAndDeletedAtIsNull(Long packageId, String tenantId);
 
-    Optional<Package> findByTrackingNumberAndTenantId(String trackingNumber, String tenantId);
+    Optional<Package> findByTrackingNumberAndTenantIdAndDeletedAtIsNull(String trackingNumber, String tenantId);
 }

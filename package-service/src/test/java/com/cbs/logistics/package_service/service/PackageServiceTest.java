@@ -29,7 +29,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +41,9 @@ class PackageServiceTest {
 
     @Mock
     private PackageMapper packageMapper;
+
+    @Mock
+    private EventOutboxService eventOutboxService;
 
     @InjectMocks
     private PackageService packageService;
@@ -92,6 +94,7 @@ class PackageServiceTest {
         assertThat(result).isEqualTo(packageDto);
         assertThat(packageEntity.getPackageStatus()).isEqualTo(PackageStatus.NEW);
         verify(packageRepository).save(packageEntity);
+        verify(eventOutboxService).storePackageStatusChanged(any());
     }
 
     @Test
@@ -103,7 +106,7 @@ class PackageServiceTest {
 
     @Test
     void update_ShouldUpdatePackage() {
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
@@ -120,11 +123,12 @@ class PackageServiceTest {
 
         assertThat(result).isEqualTo(packageDto);
         assertThat(packageEntity.getPackageStatus()).isEqualTo(PackageStatus.IN_TRANSIT);
+        verify(eventOutboxService).storePackageStatusChanged(any());
     }
 
     @Test
     void update_ShouldThrowException_WhenPackageNotFound() {
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.empty());
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> packageService.update(1L, updateRequest))
                 .isInstanceOf(PackageNotFoundException.class);
@@ -134,7 +138,7 @@ class PackageServiceTest {
     void update_ShouldThrowException_WhenInvalidStatusTransition() {
         packageEntity.setPackageStatus(PackageStatus.DELIVERED);
         updateRequest.setPackageStatus(PackageStatus.NEW);
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
 
         assertThatThrownBy(() -> packageService.update(1L, updateRequest))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -145,7 +149,7 @@ class PackageServiceTest {
     void update_ShouldAllowSameStatus() {
         packageEntity.setPackageStatus(PackageStatus.IN_TRANSIT);
         updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
@@ -159,7 +163,7 @@ class PackageServiceTest {
     void update_ShouldAllowTransitionFromNewToInTransit() {
         packageEntity.setPackageStatus(PackageStatus.NEW);
         updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
@@ -171,7 +175,7 @@ class PackageServiceTest {
 
     @Test
     void getById_ShouldReturnPackage() {
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
         PackageDto result = packageService.getById(1L);
@@ -181,24 +185,28 @@ class PackageServiceTest {
 
     @Test
     void getById_ShouldThrowException_WhenPackageNotFound() {
-        when(packageRepository.findByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(Optional.empty());
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> packageService.getById(1L))
                 .isInstanceOf(PackageNotFoundException.class);
     }
 
     @Test
-    void delete_ShouldDeletePackage() {
-        when(packageRepository.existsByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(true);
+    void delete_ShouldSoftDeletePackage() {
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
 
         packageService.delete(1L);
 
-        verify(packageRepository).deleteById(1L);
+        assertThat(packageEntity.getDeletedAt()).isNotNull();
+        verify(packageRepository).save(packageEntity);
+        verify(packageRepository, never()).deleteById(any());
+        verify(eventOutboxService).storePackageStatusChanged(any());
     }
 
     @Test
     void delete_ShouldThrowException_WhenPackageNotFound() {
-        when(packageRepository.existsByPackageIdAndTenantId(1L, TENANT_ID)).thenReturn(false);
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> packageService.delete(1L))
                 .isInstanceOf(PackageNotFoundException.class);
@@ -208,7 +216,7 @@ class PackageServiceTest {
     void getAll_ShouldReturnPagedPackages() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Package> packagePage = new PageImpl<>(List.of(packageEntity), pageable, 1);
-        when(packageRepository.findByTenantId(TENANT_ID, pageable)).thenReturn(packagePage);
+        when(packageRepository.findByTenantIdAndDeletedAtIsNull(TENANT_ID, pageable)).thenReturn(packagePage);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
         Page<PackageDto> result = packageService.getAll(pageable);

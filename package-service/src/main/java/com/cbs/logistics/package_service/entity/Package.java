@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Entity
 @Table
 @AllArgsConstructor
@@ -41,4 +43,8 @@ public class Package {
     private PackageStatus packageStatus;
     @Column
     private String locationId;
+
+    /** Soft delete : timestamp de suppression logique (null = actif). */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 }

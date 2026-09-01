@@ -82,4 +82,4 @@ management:
 
 # ── JWT Resource Server ──
 jwt:
-  secret: ${JWT_SECRET:cbs-dev-secret-key-must-be-replaced-in-prod}
+  secret: ${JWT_SECRET}

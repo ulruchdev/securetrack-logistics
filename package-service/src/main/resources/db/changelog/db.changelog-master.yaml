@@ -78,3 +78,9 @@ databaseChangeLog:
   - include:
       file: 004-add-tracking-number.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 005-create-event-outbox.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 006-add-deleted-at-soft-delete.yaml
+      relativeToChangelogFile: true

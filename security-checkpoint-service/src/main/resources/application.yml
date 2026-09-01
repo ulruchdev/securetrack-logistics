@@ -28,6 +28,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
       # Désactive le scan des repositories Redis (nos entités sont JPA, pas RedisHash)
       repositories:
         enabled: false
@@ -48,7 +49,7 @@ feign:
 
 # JWT Resource Server
 jwt:
-  secret: ${JWT_SECRET:cbs-dev-secret-key-must-be-replaced-in-prod}
+  secret: ${JWT_SECRET}
 
 # URL du Location Service (surchargeable par variable d'environnement LOCATION_SERVICE_URL)
 location-service:

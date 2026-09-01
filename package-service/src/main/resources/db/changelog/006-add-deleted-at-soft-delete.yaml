@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6-add-deleted-at-soft-delete
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: package
+        - not:
+            - columnExists:
+                tableName: package
+                columnName: deleted_at
+      changes:
+        - addColumn:
+            tableName: package
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+        - createIndex:
+            indexName: idx_package_deleted_at
+            tableName: package
+            columns:
+              - column:
+                  name: deleted_at

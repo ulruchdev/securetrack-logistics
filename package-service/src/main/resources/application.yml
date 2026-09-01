@@ -32,5 +32,5 @@ logging:
     com.cbs.logistics.package_service: INFO
 # ── JWT Resource Server ──
 jwt:
-  secret: ${JWT_SECRET:cbs-dev-secret-key-must-be-replaced-in-prod}
+  secret: ${JWT_SECRET}
   # En prod, utiliser jwt.jwk-set-uri: https://idp.example.com/realms/cbs/protocol/openid-connect/certs

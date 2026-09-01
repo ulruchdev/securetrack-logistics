@@ -9,6 +9,7 @@ WORKDIR /workspace
 # Cache dépendances
 COPY pom.xml ./
 COPY common-dto/pom.xml ./common-dto/
+COPY common-security/pom.xml ./common-security/
 COPY location-service/pom.xml ./location-service/
 RUN mvn location-service:help-effective-pom -q -Doutput=/dev/null 2>/dev/null || true
 

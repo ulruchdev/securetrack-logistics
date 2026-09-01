@@ -12,7 +12,6 @@ import com.cbs.logistics.package_service.mapper.PackageMapper;
 import com.cbs.logistics.package_service.repository.PackageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +25,7 @@ import java.time.Instant;
 public class PackageService {
     private final PackageRepository packageRepository;
     private final PackageMapper packageMapper;
-    private final RabbitTemplate rabbitTemplate;
+    private final EventOutboxService eventOutboxService;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -37,20 +36,25 @@ public class PackageService {
         entity.setTenantId(TenantContext.getCurrent());
         Package savedEntity = packageRepository.save(entity);
 
-        publishStatusChanged(savedEntity.getPackageId(), null, savedEntity.getPackageStatus());
+        // Transactional outbox : l'événement est stocké dans la même transaction
+        PackageStatusChangedEvent event = new PackageStatusChangedEvent(
+                savedEntity.getPackageId(), null, savedEntity.getPackageStatus().name(),
+                null, Instant.now()
+        );
+        eventOutboxService.storePackageStatusChanged(event);
 
         return packageMapper.toDto(savedEntity);
     }
 
     public Page<PackageDto> getAll(Pageable page) {
         String tenantId = TenantContext.getCurrent();
-        Page<Package> packages = packageRepository.findByTenantId(tenantId, page);
+        Page<Package> packages = packageRepository.findByTenantIdAndDeletedAtIsNull(tenantId, page);
         return packages.map(packageMapper::toDto);
     }
 
     public PackageDto update(Long id, UpdatePackageRequest request) {
         String tenantId = TenantContext.getCurrent();
-        Package entity = packageRepository.findByPackageIdAndTenantId(id, tenantId)
+        Package entity = packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(id));
 
         PackageStatus previousStatus = entity.getPackageStatus();
@@ -63,7 +67,11 @@ public class PackageService {
         Package updatedEntity = packageRepository.save(entity);
 
         if (request.getPackageStatus() != null && previousStatus != request.getPackageStatus()) {
-            publishStatusChanged(id, previousStatus, updatedEntity.getPackageStatus());
+            PackageStatusChangedEvent event = new PackageStatusChangedEvent(
+                    id, previousStatus.name(), updatedEntity.getPackageStatus().name(),
+                    null, Instant.now()
+            );
+            eventOutboxService.storePackageStatusChanged(event);
         }
 
         return packageMapper.toDto(updatedEntity);
@@ -71,24 +79,35 @@ public class PackageService {
 
     public PackageDto getById(Long id) {
         String tenantId = TenantContext.getCurrent();
-        Package entity = packageRepository.findByPackageIdAndTenantId(id, tenantId)
+        Package entity = packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(id));
         return packageMapper.toDto(entity);
     }
 
     public PackageDto getByTrackingNumber(String trackingNumber) {
         String tenantId = TenantContext.getCurrent();
-        Package entity = packageRepository.findByTrackingNumberAndTenantId(trackingNumber, tenantId)
+        Package entity = packageRepository.findByTrackingNumberAndTenantIdAndDeletedAtIsNull(trackingNumber, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(trackingNumber));
         return packageMapper.toDto(entity);
     }
 
+    /**
+     * Soft delete : positionne deleted_at au lieu de supprimer physiquement la ligne.
+     * Les requêtes du repository filtrent automatiquement les packages supprimés.
+     */
     public void delete(Long id) {
         String tenantId = TenantContext.getCurrent();
-        if (!packageRepository.existsByPackageIdAndTenantId(id, tenantId)) {
-            throw new PackageNotFoundException(id);
-        }
-        packageRepository.deleteById(id);
+        Package entity = packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
+                .orElseThrow(() -> new PackageNotFoundException(id));
+        entity.setDeletedAt(Instant.now());
+        packageRepository.save(entity);
+
+        // Événement de suppression dans l'outbox
+        PackageStatusChangedEvent event = new PackageStatusChangedEvent(
+                id, entity.getPackageStatus().name(), "DELETED",
+                null, Instant.now()
+        );
+        eventOutboxService.storePackageStatusChanged(event);
     }
 
     /**
@@ -119,23 +138,6 @@ public class PackageService {
         }
         if (currentStatus == PackageStatus.IN_TRANSIT && newStatus != PackageStatus.DELIVERED && newStatus != PackageStatus.LOST) {
             throw new IllegalArgumentException("From IN_TRANSIT, can only go to DELIVERED or LOST");
-        }
-    }
-
-    private void publishStatusChanged(Long packageId, PackageStatus previousStatus,
-                                      PackageStatus newStatus) {
-        try {
-            PackageStatusChangedEvent event = new PackageStatusChangedEvent(
-                    packageId,
-                    previousStatus != null ? previousStatus.name() : null,
-                    newStatus.name(),
-                    null,
-                    Instant.now()
-            );
-            rabbitTemplate.convertAndSend("package-status", "status.changed", event);
-            log.info("Event published: package {} status {} -> {}", packageId, previousStatus, newStatus);
-        } catch (Exception e) {
-            log.warn("Failed to publish status changed event for package {}: {}", packageId, e.getMessage());
         }
     }
 }
