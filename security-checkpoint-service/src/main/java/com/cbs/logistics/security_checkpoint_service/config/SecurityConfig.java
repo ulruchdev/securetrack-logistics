@@ -1,5 +1,7 @@
 package com.cbs.logistics.security_checkpoint_service.config;
 
+import com.cbs.logistics.common.security.filter.TenantFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -7,16 +9,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Sécurité JWT Resource Server pour le Security Checkpoint Service.
- *
- * <p>Remplace l'ancienne Basic Auth in-memory par un validateur JWT
- * fourni par le module common-security.</p>
- */
 @EnableWebSecurity
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final TenantFilter tenantFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -29,8 +29,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> {})  // JwtDecoder fourni par JwtConfig de common-security
-                );
+                        .jwt(jwt -> {})
+                )
+                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

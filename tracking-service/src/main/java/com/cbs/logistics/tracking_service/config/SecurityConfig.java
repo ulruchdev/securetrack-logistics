@@ -1,5 +1,6 @@
 package com.cbs.logistics.tracking_service.config;
 
+import com.cbs.logistics.common.security.filter.TenantFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -7,6 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Sécurité JWT Resource Server pour le Tracking Service.
@@ -17,6 +19,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @Configuration
 public class SecurityConfig {
+
+    private final TenantFilter tenantFilter;
+
+    public SecurityConfig(TenantFilter tenantFilter) {
+        this.tenantFilter = tenantFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -30,7 +38,8 @@ public class SecurityConfig {
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {})
-                );
+                )
+                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
