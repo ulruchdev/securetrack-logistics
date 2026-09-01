@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: test-route
+          uri: http://localhost:19999
+          predicates:
+            - Path=/api/test/**
+
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=
+
+server:
+  port: 0
+
+logging:
+  level:
+    org.springframework.cloud.gateway: WARN
+    com.cbs.logistics.gateway_service: WARN

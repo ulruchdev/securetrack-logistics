@@ -28,6 +28,7 @@
         <module>location-service</module>
         <module>security-checkpoint-service</module>
         <module>tracking-service</module>
+        <module>gateway-service</module>
     </modules>
 
     <properties>

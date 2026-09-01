@@ -225,6 +225,39 @@ services:
     profiles:
       - full
 
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    container_name: cbs-gateway
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
+      PACKAGE_SERVICE_URL: http://package-service:8081
+      LOCATION_SERVICE_URL: http://location-service:8082
+      CHECKPOINT_SERVICE_URL: http://security-checkpoint-service:8083
+      TRACKING_SERVICE_URL: http://tracking-service:8084
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      package-service:
+        condition: service_healthy
+      location-service:
+        condition: service_healthy
+      security-checkpoint-service:
+        condition: service_healthy
+      tracking-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    profiles:
+      - full
+
 volumes:
   postgres_data:
   mongo_data:
