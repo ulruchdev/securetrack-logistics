@@ -6,12 +6,16 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 
-# Cache dépendances
+# Cache dépendances (all POMs to satisfy root reactor)
 COPY pom.xml ./
 COPY common-dto/pom.xml ./common-dto/
 COPY common-security/pom.xml ./common-security/
+COPY package-service/pom.xml ./package-service/
+COPY location-service/pom.xml ./location-service/
 COPY security-checkpoint-service/pom.xml ./security-checkpoint-service/
-RUN mvn security-checkpoint-service:help-effective-pom -q -Doutput=/dev/null 2>/dev/null || true
+COPY tracking-service/pom.xml ./tracking-service/
+COPY gateway-service/pom.xml ./gateway-service/
+RUN mvn dependency:go-offline -B -q 2>/dev/null || true
 
 # Build complet
 COPY . .
