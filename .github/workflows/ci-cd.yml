@@ -2,9 +2,13 @@ name: CI/CD SecureTrack Logistics
 
 on:
   push:
-    branches: [ develop, main, master, import-local-cbs-pr-fixed ]
+    # Trigger on pushes to deployment/integration branches.
+    # 'release/**' and 'sprint/**' cover any future naming convention.
+    branches: [ develop, main, master, 'release/**', 'sprint/**' ]
   pull_request:
-    branches: [ develop, main, import-local-cbs-pr-fixed ]
+    # Trigger on ALL pull requests regardless of target branch.
+    # Essential for Scrum: integration branches come and go every sprint.
+    # No branch filter = every PR gets CI validation.
 
 jobs:
   build-and-test:
@@ -43,11 +47,7 @@ jobs:
         run: |
           pip install coverage --quiet
           cd docs && python3 -m coverage run -m unittest test_generate_combined_openapi
-          # Le module est chargé via importlib (nom de fichier avec tirets) :
-          # on cible le fichier dans le rapport au lieu du nom de module.
           python3 -m coverage report --include='*/generate-combined-openapi.py' --fail-under=80
-
-      # La revue de code est assurée par l'application GitHub CodeRabbit (action ci-pr-reviewer retirée du marketplace)
 
       - name: Build Docker images (5 services)
         run: |
