@@ -1,0 +1,15 @@
+# Ignore non-essential files to reduce Docker build context
+.git
+.github
+.gitignore
+*.md
+!README.md
+docs/
+scripts/
+common/.env
+common/.env.example
+**/target/
+**/node_modules/
+**/.idea/
+**/*.iml
+**/src/test/
