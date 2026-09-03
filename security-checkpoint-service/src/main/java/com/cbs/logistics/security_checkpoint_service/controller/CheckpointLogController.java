@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,32 +26,38 @@ public class CheckpointLogController {
     private final CheckpointLogService service;
 
     @PostMapping
-    @Operation(summary = "Enregistrer un passage", description = "Créer un nouveau log de passage de colis au checkpoint")
+    @Operation(summary = "Enregistrer un passage",
+               description = "Créer un nouveau log de passage d'un colis (par trackingNumber) au checkpoint")
     @ApiResponse(responseCode = "201", description = "Passage enregistré avec succès")
-    public ResponseEntity<CheckpointLogDto> createCheckpointLog(@Valid @RequestBody CreateCheckpointRequest request) {
+    public ResponseEntity<CheckpointLogDto> createCheckpointLog(
+            @Valid @RequestBody CreateCheckpointRequest request) {
         CheckpointLogDto dto = service.create(request);
         URI location = URI.create("/api/checkpoints/" + dto.id());
         return ResponseEntity.created(location).body(dto);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Consulter un log", description = "Récupérer les détails d'un passage spécifique")
+    @Operation(summary = "Consulter un log",
+               description = "Récupérer les détails d'un passage spécifique")
     public ResponseEntity<CheckpointLogDto> getCheckpointLogById(@PathVariable Long id) {
         CheckpointLogDto dto = service.getById(id);
         return ResponseEntity.ok(dto);
     }
 
     @GetMapping
-    @Operation(summary = "Lister les logs", description = "Lister tous les passages avec pagination")
+    @Operation(summary = "Lister les logs",
+               description = "Lister tous les passages avec pagination")
     public ResponseEntity<Page<CheckpointLogDto>> getAllCheckpointLogs(Pageable pageable) {
         Page<CheckpointLogDto> logs = service.getAll(pageable);
         return ResponseEntity.ok(logs);
     }
 
-    @GetMapping("/by-package/{packageId}")
-    @Operation(summary = "Logs par colis", description = "Voir les checkpoints par lesquels un colis est passé (paginé)")
-    public ResponseEntity<Page<CheckpointLogDto>> getCheckpointLogsByPackageId(@PathVariable Long packageId, Pageable pageable) {
-        Page<CheckpointLogDto> logs = service.getByPackageId(packageId, pageable);
+    @GetMapping("/by-tracking/{trackingNumber}")
+    @Operation(summary = "Logs par tracking number",
+               description = "Voir les checkpoints par lesquels un colis (par trackingNumber) est passé")
+    public ResponseEntity<Page<CheckpointLogDto>> getCheckpointLogsByTrackingNumber(
+            @PathVariable String trackingNumber, Pageable pageable) {
+        Page<CheckpointLogDto> logs = service.getByTrackingNumber(trackingNumber, pageable);
         return ResponseEntity.ok(logs);
     }
 }

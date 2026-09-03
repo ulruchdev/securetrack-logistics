@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3-add-tenant-id
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: tracking_history
+        - not:
+            - columnExists:
+                tableName: tracking_history
+                columnName: tenant_id
+      changes:
+        - addColumn:
+            tableName: tracking_history
+            columns:
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  defaultValue: 'default'
+        - addDefaultValue:
+            tableName: tracking_history
+            columnName: tenant_id
+            defaultValue: 'default'
+        - sql:
+            sql: ALTER TABLE tracking_history ALTER COLUMN tenant_id SET NOT NULL
+        - createIndex:
+            tableName: tracking_history
+            indexName: idx_tracking_tenant_id
+            columns:
+              - column:
+                  name: tenant_id

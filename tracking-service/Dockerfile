@@ -9,6 +9,7 @@ WORKDIR /workspace
 # Cache dépendances
 COPY pom.xml ./
 COPY common-dto/pom.xml ./common-dto/
+COPY common-security/pom.xml ./common-security/
 COPY tracking-service/pom.xml ./tracking-service/
 RUN mvn tracking-service:help-effective-pom -q -Doutput=/dev/null 2>/dev/null || true
 

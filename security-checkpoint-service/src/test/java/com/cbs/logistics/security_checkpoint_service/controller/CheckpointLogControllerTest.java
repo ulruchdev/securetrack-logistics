@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CheckpointLogController.class)
-@AutoConfigureMockMvc(addFilters = false) // Spring Security testé séparément ; on désactive les filtres ici
+@AutoConfigureMockMvc(addFilters = false)
 class CheckpointLogControllerTest {
 
     @Autowired
@@ -43,17 +43,16 @@ class CheckpointLogControllerTest {
 
     private static final String VALID_BODY = """
             {
-              "packageId": 1,
-              "locationId": "loc-1",
+              "trackingNumber": "ST-ABCDEF12",
+              "checkpointId": 10,
               "result": "OK",
-              "comment": "Passage OK",
-              "createdBy": "agent-1"
+              "comment": "Passage OK"
             }
             """;
 
     private CheckpointLogDto dto() {
         return new CheckpointLogDto(
-                1L, 1L, "loc-1",
+                1L, "ST-ABCDEF12", 10L,
                 LocalDateTime.of(2026, 8, 10, 10, 0),
                 CheckpointResult.OK, "Passage OK", "agent-1");
     }
@@ -67,7 +66,7 @@ class CheckpointLogControllerTest {
                         .content(VALID_BODY))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/checkpoints/1"))
-                .andExpect(jsonPath("$.packageId").value(1))
+                .andExpect(jsonPath("$.trackingNumber").value("ST-ABCDEF12"))
                 .andExpect(jsonPath("$.result").value("OK"));
     }
 
@@ -75,10 +74,9 @@ class CheckpointLogControllerTest {
     void createCheckpointLog_shouldReturn400_whenValidationFails() throws Exception {
         String invalidBody = """
                 {
-                  "packageId": null,
-                  "locationId": "",
-                  "result": null,
-                  "createdBy": ""
+                  "trackingNumber": "",
+                  "checkpointId": null,
+                  "result": null
                 }
                 """;
 
@@ -86,14 +84,13 @@ class CheckpointLogControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidBody))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").value("Erreur de validation"))
-                .andExpect(jsonPath("$.fieldErrors[?(@.field == 'packageId')].message").value("L'ID du colis est obligatoire"));
+                .andExpect(jsonPath("$.title").value("Erreur de validation"));
     }
 
     @Test
-    void createCheckpointLog_shouldReturn404_whenLocationNotFound() throws Exception {
+    void createCheckpointLog_shouldReturn404_whenPackageNotFound() throws Exception {
         when(service.create(any(CreateCheckpointRequest.class)))
-                .thenThrow(new LocationNotFoundException("La localisation demandée n'existe pas"));
+                .thenThrow(new LocationNotFoundException("Package not found"));
 
         mockMvc.perform(post("/api/checkpoints")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -141,7 +138,7 @@ class CheckpointLogControllerTest {
     @Test
     void createCheckpointLog_shouldReturn422_whenCheckpointUnavailable() throws Exception {
         when(service.create(any(CreateCheckpointRequest.class)))
-                .thenThrow(new CheckpointUnavailableException("Checkpoint not available for location: loc-1"));
+                .thenThrow(new CheckpointUnavailableException("Checkpoint not available: 10"));
 
         mockMvc.perform(post("/api/checkpoints")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -173,7 +170,7 @@ class CheckpointLogControllerTest {
         mockMvc.perform(get("/api/checkpoints/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.locationId").value("loc-1"));
+                .andExpect(jsonPath("$.trackingNumber").value("ST-ABCDEF12"));
     }
 
     @Test
@@ -195,16 +192,16 @@ class CheckpointLogControllerTest {
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].packageId").value(1))
+                .andExpect(jsonPath("$.content[0].trackingNumber").value("ST-ABCDEF12"))
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
-    void getCheckpointLogsByPackageId_shouldReturnPaged200() throws Exception {
+    void getCheckpointLogsByTrackingNumber_shouldReturnPaged200() throws Exception {
         PageImpl<CheckpointLogDto> page = new PageImpl<>(List.of(dto()), PageRequest.of(0, 10), 1);
-        when(service.getByPackageId(eq(1L), any())).thenReturn(page);
+        when(service.getByTrackingNumber(eq("ST-ABCDEF12"), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/checkpoints/by-package/1")
+        mockMvc.perform(get("/api/checkpoints/by-tracking/ST-ABCDEF12")
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())

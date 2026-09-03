@@ -16,11 +16,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CreateCheckpointRequest {
 
-    @NotNull(message = "L'ID du colis est obligatoire")
-    private Long packageId;
+    @NotBlank(message = "Le tracking number du colis est obligatoire (format ST-XXXXXXXX)")
+    private String trackingNumber;
 
-    @NotBlank(message = "L'ID de la localisation est obligatoire")
-    private String locationId;
+    @NotNull(message = "L'ID du checkpoint est obligatoire")
+    private Long checkpointId;
 
     private LocalDateTime checkpointTime;
 
@@ -29,6 +29,5 @@ public class CreateCheckpointRequest {
 
     private String comment;
 
-    @NotBlank(message = "L'agent créateur est obligatoire")
-    private String createdBy;
+    // createdBy est extrait du JWT sub claim, pas du request body
 }

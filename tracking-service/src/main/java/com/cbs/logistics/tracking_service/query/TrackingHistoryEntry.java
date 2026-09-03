@@ -26,6 +26,8 @@ public class TrackingHistoryEntry {
     private Long trackingId;
 
     private String packageId;
+
+    private String tenantId;
     private String locationId;
     private String status;
     private java.time.Instant occurredAt;

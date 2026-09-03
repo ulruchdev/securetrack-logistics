@@ -51,6 +51,7 @@ Le Tracking Service est un microservice RESTful responsable de l'enregistrement 
 2. **Configurer la variable d'environnement :**
    ```bash
    export DB_PASSWORD="<votre-mot-de-passe>"   # identique à POSTGRES_PASSWORD de common/.env
+export JWT_SECRET="Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM="
    ```
 
 3. **Lancer l'application :**
@@ -72,7 +73,7 @@ L'application sera accessible sur `http://localhost:8084`.
 ### Enregistrer une transition (écriture)
 
 ```bash
-curl -X POST http://localhost:8084/api/tracking \
+curl -H "Authorization: Bearer $JWT_TOKEN" -X POST http://localhost:8084/api/tracking \
   -H "Content-Type: application/json" \
   -d '{
     "packageId": "PKG-001",
@@ -98,7 +99,7 @@ curl -X POST http://localhost:8084/api/tracking \
 ### Consulter l'historique d'un colis (lecture)
 
 ```bash
-curl http://localhost:8084/api/tracking/package/PKG-001
+curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8084/api/tracking/package/PKG-001
 ```
 
 **Réponse** `200 OK` :
@@ -126,7 +127,7 @@ curl http://localhost:8084/api/tracking/package/PKG-001
 ### Consulter une transition par son identifiant
 
 ```bash
-curl http://localhost:8084/api/tracking/1
+curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8084/api/tracking/1
 ```
 
 **Réponse** `200 OK` : un objet `TransitionDto`.
@@ -212,6 +213,7 @@ le default en Spring Boot, on pourra repasser en `ddl-auto: none` pour l'ensembl
 | `DB_URL` | `jdbc:postgresql://localhost:5433/cbsdb` | URL PostgreSQL |
 | `DB_USERNAME` | `cbsuser` | Utilisateur PostgreSQL |
 | `DB_PASSWORD` | — (obligatoire) | Mot de passe PostgreSQL |
+| `JWT_SECRET` | — (obligatoire) | Clé symétrique JWT (base64, ≥32 bytes) |
 | `axon.axonserver.enabled` | `false` | Désactive AxonServer (JPA event store local) |
 | `axon.serializer.general` | `jackson` | Sérialiseur pour l'event store |
 

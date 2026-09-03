@@ -53,7 +53,7 @@ export SECURITY_PASSWORD=votre-mot-de-passe
 
 ### Enregistrer un passage
 ```bash
-curl -u "$AUTH_USER:$SECURITY_PASSWORD" -X POST http://localhost:8083/api/checkpoints \
+curl -H "Authorization: Bearer $JWT_TOKEN" -X POST http://localhost:8083/api/checkpoints \
   -H "Content-Type: application/json" \
   -d '{
     "packageId": 1,
@@ -66,17 +66,17 @@ curl -u "$AUTH_USER:$SECURITY_PASSWORD" -X POST http://localhost:8083/api/checkp
 
 ### Consulter un log
 ```bash
-curl -u "$AUTH_USER:$SECURITY_PASSWORD" -X GET http://localhost:8083/api/checkpoints/1
+curl -H "Authorization: Bearer $JWT_TOKEN" -X GET http://localhost:8083/api/checkpoints/1
 ```
 
 ### Lister tous les logs (avec pagination)
 ```bash
-curl -u "$AUTH_USER:$SECURITY_PASSWORD" -X GET "http://localhost:8083/api/checkpoints?page=0&size=10"
+curl -H "Authorization: Bearer $JWT_TOKEN" -X GET "http://localhost:8083/api/checkpoints?page=0&size=10"
 ```
 
 ### Logs par colis (traçabilité)
 ```bash
-curl -u "$AUTH_USER:$SECURITY_PASSWORD" -X GET http://localhost:8083/api/checkpoints/by-package/1
+curl -H "Authorization: Bearer $JWT_TOKEN" -X GET http://localhost:8083/api/checkpoints/by-package/1
 ```
 
 ## Modèle de données
@@ -105,7 +105,7 @@ curl -u "$AUTH_USER:$SECURITY_PASSWORD" -X GET http://localhost:8083/api/checkpo
 - **Framework** : Spring Boot 3.4.1
 - **Base de données** : PostgreSQL
 - **ORM** : JPA/Hibernate
-- **Sécurité** : Spring Security (Basic Auth)
+- **Sécurité** : Spring Security (JWT Resource Server)
 - **Validation** : Jakarta Validation
 - **Mapping** : MapStruct
 - **Client HTTP** : OpenFeign
@@ -123,7 +123,7 @@ Toutes les erreurs sont renvoyées au format **RFC 7807** (`application/problem+
 
 | Statut | Cas |
 |---|---|
-| 401 | Identifiants absents ou invalides (Basic Auth) |
+| 401 | Token JWT absent ou invalide |
 | 404 | Log ou localisation non trouvé(e) |
 | 422 | Checkpoint non disponible OU localisation rattachée à un autre colis |
 | 503 | Location Service indisponible |

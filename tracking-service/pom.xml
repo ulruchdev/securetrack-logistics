@@ -110,6 +110,10 @@
             <version>${axon.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.securetrack</groupId>
+            <artifactId>common-security</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

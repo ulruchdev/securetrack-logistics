@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 
 public record CheckpointLogDto(
         Long id,
-        Long packageId,
-        String locationId,
+        String trackingNumber,
+        Long checkpointId,
         LocalDateTime checkpointTime,
         CheckpointResult result,
         String comment,

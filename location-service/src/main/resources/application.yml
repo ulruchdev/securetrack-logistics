@@ -5,40 +5,48 @@ spring:
   application:
     name: location-service
 
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
-
-
+  # ── MongoDB (entite Location existante) ──
   data:
-     mongodb:
-        # Notez l'espace après 'uri:' et l'ajout de authSource=admin
-        uri: ${MONGO_URI}   # OBLIGATOIRE : ex. mongodb://cbsuser:<mot-de-passe>@localhost:27017/cbsdb?authSource=admin
+    mongodb:
+      uri: ${MONGO_URI}
+
+  # ── PostgreSQL (nouvelles entites Site/Checkpoint) ──
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/cbsdb}
+    username: ${DB_USERNAME:cbsuser}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
 
 logging:
   level:
-    org.springframework.data.mongodb.core.MongoTemplate: DEBUG   # Utile pour voir les queries en dev
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
     com.cbs.logistics.location_service: INFO
-    org.springframework.cloud.openfeign: DEBUG   # Pour debug Feign plus tard si besoin
+    org.springframework.cloud.openfeign: DEBUG
 
-# Configuration Feign (optionnelle mais bonne pratique)
 feign:
   client:
     config:
       default:
         connectTimeout: 5000
         readTimeout: 10000
-        loggerLevel: basic   # Ou 'full' pour plus de détails en dev
+        loggerLevel: basic
 
-# URL du Package Service (surchargeable par variable d'environnement PACKAGE_SERVICE_URL)
 package-service:
   url: ${PACKAGE_SERVICE_URL:http://localhost:8081}
 
-# Résilience : CircuitBreaker + Retry sur l'appel à PackageService
-# (les timeouts Feign connect/read ci-dessus bornent chaque requête ;
-#  le circuit breaker coupe le flux dès que le service distant est en panne)
 resilience4j:
   circuitbreaker:
     instances:
@@ -60,9 +68,7 @@ resilience4j:
           - java.io.IOException
           - java.util.concurrent.TimeoutException
           - feign.RetryableException
-          - com.cbs.logistics.location_service.exception.PackageServiceUnavailableException
 
-# Actuator : monitoring des circuit breakers
 management:
   endpoints:
     web:
@@ -73,3 +79,7 @@ management:
       enabled: true
     circuitbreakerevents:
       enabled: true
+
+# ── JWT Resource Server ──
+jwt:
+  secret: ${JWT_SECRET}

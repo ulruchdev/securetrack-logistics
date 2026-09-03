@@ -1,10 +1,11 @@
 package com.cbs.logistics.location_service.service;
 
+import com.cbs.logistics.common.dto.PackageDto;
+import com.cbs.logistics.common.security.context.TenantContext;
 import com.cbs.logistics.location_service.client.PackageServiceClient;
 import com.cbs.logistics.location_service.dto.CreateLocationRequest;
 import com.cbs.logistics.location_service.dto.EnrichedLocationDto;
 import com.cbs.logistics.location_service.dto.LocationDto;
-import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.location_service.entity.Location;
 import com.cbs.logistics.location_service.exception.LocationNotFoundException;
 import com.cbs.logistics.location_service.locationMapper.LocationMapper;
@@ -27,27 +28,31 @@ public class LocationService {
     @CircuitBreaker(name = "packageService")
     @Retry(name = "packageService")
     public LocationDto create(CreateLocationRequest request) {
-        // Valider que le package existe (le client Feign lève les exceptions métier via l'ErrorDecoder)
         packageServiceClient.getPackageById(request.getPackageId());
 
         Location location = locationMapper.toEntity(request);
+        location.setTenantId(TenantContext.getCurrent());
         Location saved = locationRepository.save(location);
         return locationMapper.toDto(saved);
     }
 
     public LocationDto getById(String id) {
-        Location location = locationRepository.findById(id).orElseThrow(() -> new LocationNotFoundException("Location not found with id: " + id));
+        String tenantId = TenantContext.getCurrent();
+        Location location = locationRepository.findByLocationIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new LocationNotFoundException("Location not found with id: " + id));
         return locationMapper.toDto(location);
     }
 
     public Page<LocationDto> getAll(Pageable pageable) {
-        return locationRepository.findAll(pageable).map(locationMapper::toDto);
+        String tenantId = TenantContext.getCurrent();
+        return locationRepository.findByTenantId(tenantId, pageable).map(locationMapper::toDto);
     }
 
     @CircuitBreaker(name = "packageService")
     @Retry(name = "packageService")
     public EnrichedLocationDto getByPackageId(Long packageId) {
-        Location location = locationRepository.findByPackageId(packageId)
+        String tenantId = TenantContext.getCurrent();
+        Location location = locationRepository.findByPackageIdAndTenantId(packageId, tenantId)
                 .orElseThrow(() -> new LocationNotFoundException("Location not found for package id: " + packageId));
         LocationDto locationDto = locationMapper.toDto(location);
         PackageDto packageDto = packageServiceClient.getPackageById(packageId);

@@ -1,0 +1,29 @@
+databaseChangeLog:
+  # ── V4 : ajout colonne trackingNumber (ST-XXXXXXXX unique par tenant) ──
+  - changeSet:
+      id: 4-add-tracking-number
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: package
+        - not:
+            - columnExists:
+                tableName: package
+                columnName: tracking_number
+      changes:
+        - addColumn:
+            tableName: package
+            columns:
+              - column:
+                  name: tracking_number
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+        - createIndex:
+            tableName: package
+            indexName: idx_package_tracking_number
+            columns:
+              - column:
+                  name: tracking_number
