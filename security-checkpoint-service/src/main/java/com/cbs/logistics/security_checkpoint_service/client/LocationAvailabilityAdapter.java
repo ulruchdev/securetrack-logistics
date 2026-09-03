@@ -17,9 +17,9 @@ public class LocationAvailabilityAdapter implements LocationAvailabilityPort {
     private final LocationServiceClient locationServiceClient;
 
     @Override
-    @Cacheable(cacheNames = "locationAvailability", key = "#locationId")
-    public LocationAvailability getLocation(String locationId) {
-        LocationServiceClient.LocationDto dto = locationServiceClient.getLocationById(locationId);
-        return new LocationAvailability(dto.packageId(), dto.checkpointAvailable());
+    @Cacheable(cacheNames = "checkpointAvailability", key = "#checkpointId")
+    public CheckpointAvailability getCheckpointAvailability(Long checkpointId) {
+        LocationServiceClient.CheckpointDto dto = locationServiceClient.getCheckpointById(checkpointId);
+        return new CheckpointAvailability(dto.active(), dto.siteId());
     }
 }

@@ -2,6 +2,7 @@ package com.cbs.logistics.package_service.service;
 
 import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.common.dto.PackageStatusChangedEvent;
+import com.cbs.logistics.common.security.context.TenantContext;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.entity.Package;
@@ -11,11 +12,11 @@ import com.cbs.logistics.package_service.mapper.PackageMapper;
 import com.cbs.logistics.package_service.repository.PackageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 
 @Slf4j
@@ -24,29 +25,36 @@ import java.time.Instant;
 public class PackageService {
     private final PackageRepository packageRepository;
     private final PackageMapper packageMapper;
-    private final RabbitTemplate rabbitTemplate;
+    private final EventOutboxService eventOutboxService;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public PackageDto create(CreatePackageRequest request) {
-        // La validation des champs est assurée par Bean Validation (@Valid au niveau du controller)
         Package entity = packageMapper.toEntity(request);
+        entity.setTrackingNumber(generateTrackingNumber());
         entity.setPackageStatus(PackageStatus.NEW);
+        entity.setTenantId(TenantContext.getCurrent());
         Package savedEntity = packageRepository.save(entity);
 
-        // Publication de l'evenement : le Tracking Service sera notifie automatiquement
-        publishStatusChanged(savedEntity.getPackageId(), null, savedEntity.getPackageStatus());
+        // Transactional outbox : l'événement est stocké dans la même transaction
+        PackageStatusChangedEvent event = new PackageStatusChangedEvent(
+                savedEntity.getPackageId(), null, savedEntity.getPackageStatus().name(),
+                null, Instant.now()
+        );
+        eventOutboxService.storePackageStatusChanged(event);
 
         return packageMapper.toDto(savedEntity);
     }
 
-
-
-    public Page<PackageDto> getAll(Pageable page){
-        Page<Package> packages=packageRepository.findAll(page);
+    public Page<PackageDto> getAll(Pageable page) {
+        String tenantId = TenantContext.getCurrent();
+        Page<Package> packages = packageRepository.findByTenantIdAndDeletedAtIsNull(tenantId, page);
         return packages.map(packageMapper::toDto);
     }
 
     public PackageDto update(Long id, UpdatePackageRequest request) {
-        Package entity = packageRepository.findById(id)
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(id));
 
         PackageStatus previousStatus = entity.getPackageStatus();
@@ -58,29 +66,64 @@ public class PackageService {
         packageMapper.updateEntityFromRequest(request, entity);
         Package updatedEntity = packageRepository.save(entity);
 
-        // Publication de l'événement si le statut a changé
         if (request.getPackageStatus() != null && previousStatus != request.getPackageStatus()) {
-            publishStatusChanged(id, previousStatus, updatedEntity.getPackageStatus());
+            PackageStatusChangedEvent event = new PackageStatusChangedEvent(
+                    id, previousStatus.name(), updatedEntity.getPackageStatus().name(),
+                    null, Instant.now()
+            );
+            eventOutboxService.storePackageStatusChanged(event);
         }
 
         return packageMapper.toDto(updatedEntity);
     }
 
     public PackageDto getById(Long id) {
-        Package entity = packageRepository.findById(id)
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
                 .orElseThrow(() -> new PackageNotFoundException(id));
         return packageMapper.toDto(entity);
     }
 
+    public PackageDto getByTrackingNumber(String trackingNumber) {
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByTrackingNumberAndTenantIdAndDeletedAtIsNull(trackingNumber, tenantId)
+                .orElseThrow(() -> new PackageNotFoundException(trackingNumber));
+        return packageMapper.toDto(entity);
+    }
+
+    /**
+     * Soft delete : positionne deleted_at au lieu de supprimer physiquement la ligne.
+     * Les requêtes du repository filtrent automatiquement les packages supprimés.
+     */
     public void delete(Long id) {
-        if (!packageRepository.existsById(id)) {
-            throw new PackageNotFoundException(id);
+        String tenantId = TenantContext.getCurrent();
+        Package entity = packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
+                .orElseThrow(() -> new PackageNotFoundException(id));
+        entity.setDeletedAt(Instant.now());
+        packageRepository.save(entity);
+
+        // Événement de suppression dans l'outbox
+        PackageStatusChangedEvent event = new PackageStatusChangedEvent(
+                id, entity.getPackageStatus().name(), "DELETED",
+                null, Instant.now()
+        );
+        eventOutboxService.storePackageStatusChanged(event);
+    }
+
+    /**
+     * Génère un tracking number unique au format ST-XXXXXXXX.
+     * 8 caractères alphanumériques (A-Z, 0-9) générés de façon cryptographiquement sûre.
+     */
+    private String generateTrackingNumber() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder("ST-");
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(SECURE_RANDOM.nextInt(chars.length())));
         }
-        packageRepository.deleteById(id);
+        return sb.toString();
     }
 
     private void validateStatusTransition(PackageStatus currentStatus, PackageStatus newStatus) {
-        // Conserver le même statut est toujours permis (PATCH partiel sans changement de statut)
         if (currentStatus == newStatus) {
             return;
         }
@@ -90,31 +133,11 @@ public class PackageService {
         if (currentStatus == PackageStatus.LOST && newStatus != PackageStatus.LOST) {
             throw new IllegalArgumentException("Cannot change status from LOST");
         }
-        // Allow transitions: NEW -> IN_TRANSIT -> DELIVERED or LOST
         if (currentStatus == PackageStatus.NEW && newStatus != PackageStatus.IN_TRANSIT && newStatus != PackageStatus.LOST) {
             throw new IllegalArgumentException("From NEW, can only go to IN_TRANSIT or LOST");
         }
         if (currentStatus == PackageStatus.IN_TRANSIT && newStatus != PackageStatus.DELIVERED && newStatus != PackageStatus.LOST) {
             throw new IllegalArgumentException("From IN_TRANSIT, can only go to DELIVERED or LOST");
-        }
-    }
-
-    private void publishStatusChanged(Long packageId, PackageStatus previousStatus,
-                                      PackageStatus newStatus) {
-        try {
-            PackageStatusChangedEvent event = new PackageStatusChangedEvent(
-                    packageId,
-                    previousStatus != null ? previousStatus.name() : null,
-                    newStatus.name(),
-                    null, // locationId non disponible côté Package Service
-                    Instant.now()
-            );
-            rabbitTemplate.convertAndSend("package-status", "status.changed", event);
-            log.info("Event published: package {} status {} -> {}", packageId, previousStatus, newStatus);
-        } catch (Exception e) {
-            // L'échec de publication ne doit pas faire échouer l'update
-            // Le Tracking Service peut aussi être appelé manuellement
-            log.warn("Failed to publish status changed event for package {}: {}", packageId, e.getMessage());
         }
     }
 }

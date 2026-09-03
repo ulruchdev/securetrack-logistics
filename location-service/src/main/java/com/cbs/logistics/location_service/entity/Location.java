@@ -19,6 +19,9 @@ public class Location {
     @Id
     private String locationId;
 
+    @org.springframework.data.mongodb.core.index.Indexed
+    private String tenantId;
+
     @Indexed(unique = true)
     private Long packageId;
 

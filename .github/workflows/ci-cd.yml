@@ -49,18 +49,31 @@ jobs:
 
       # La revue de code est assurée par l'application GitHub CodeRabbit (action ci-pr-reviewer retirée du marketplace)
 
-      - name: Build Docker images (préparation)
-        run: echo "Docker build ready for future services"
-
-      - name: docker-compose test
-        env:
-          POSTGRES_HOST_PORT: 5433
-          POSTGRES_DB: securetrack
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+      - name: Build Docker images (5 services)
         run: |
-          if [ -f docker-compose.yml ]; then
-            docker compose up -d --build && sleep 15 && docker compose down
-          else
-            echo "docker-compose.yml not yet created → OK"
-          fi
+          docker build -t cbs-package -f package-service/Dockerfile .
+          docker build -t cbs-location -f location-service/Dockerfile .
+          docker build -t cbs-checkpoint -f security-checkpoint-service/Dockerfile .
+          docker build -t cbs-tracking -f tracking-service/Dockerfile .
+          docker build -t cbs-gateway -f gateway-service/Dockerfile .
+          echo "✅ 5 images Docker buildées"
+
+      - name: Generate JWT secret for smoke test
+        run: echo "JWT_SECRET=$(openssl rand -base64 32)" >> $GITHUB_ENV
+
+      - name: Docker Compose smoke test
+        env:
+          POSTGRES_PASSWORD: testpassword
+          MONGO_PASSWORD: testpassword
+          REDIS_PASSWORD: testpassword
+          RABBITMQ_PASSWORD: testpassword
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          SECURITY_PASSWORD: testpassword
+        run: |
+          cp common/.env.example common/.env
+          sed -i 's/<changez-moi>/testpassword/g' common/.env
+          sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$JWT_SECRET/" common/.env
+          docker compose up -d
+          sleep 20
+          docker compose ps
+          docker compose down

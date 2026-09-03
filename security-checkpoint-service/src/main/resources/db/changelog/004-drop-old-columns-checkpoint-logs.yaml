@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4-drop-old-columns-checkpoint-logs
+      author: buffy
+      comment: Supprime les colonnes obsolètes package_id et location_id (remplacées par tracking_number et checkpoint_id)
+      changes:
+        - dropColumn:
+            tableName: checkpoint_logs
+            columnName: package_id
+        - dropColumn:
+            tableName: checkpoint_logs
+            columnName: location_id

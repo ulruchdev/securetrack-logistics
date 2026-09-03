@@ -1,0 +1,33 @@
+databaseChangeLog:
+  # ── V3 : ajout colonne tenant_id pour isolation multi-tenant ──
+  - changeSet:
+      id: 3-add-tenant-id
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: package
+        - not:
+            - columnExists:
+                tableName: package
+                columnName: tenant_id
+      changes:
+        - addColumn:
+            tableName: package
+            columns:
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  defaultValue: 'default'
+        - addDefaultValue:
+            tableName: package
+            columnName: tenant_id
+            defaultValue: 'default'
+        - sql:
+            sql: ALTER TABLE package ALTER COLUMN tenant_id SET NOT NULL
+        - createIndex:
+            tableName: package
+            indexName: idx_package_tenant_id
+            columns:
+              - column:
+                  name: tenant_id

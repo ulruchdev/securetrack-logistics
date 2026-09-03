@@ -5,7 +5,6 @@ import com.cbs.logistics.package_service.dto.CreatePackageRequest;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
 import com.cbs.logistics.package_service.service.PackageService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,9 +30,9 @@ public class PackageController {
 
     /** Propriétés persistées autorisées pour le tri (whitelist anti-erreurs 500 / injection de tri). */
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "packageId", "packageName", "packageType", "description", "weight", "fragile", "packageStatus", "locationId");
+            "packageId", "trackingNumber", "packageName", "packageType", "description", "weight", "fragile", "packageStatus", "locationId");
 
-    @Operation(summary = "Creer un colis", description = "Ajouter un nouveau colis avec statut initial NEW")
+    @Operation(summary = "Creer un colis", description = "Ajouter un nouveau colis avec statut initial NEW et trackingNumber généré automatiquement (ST-XXXXXXXX)")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Colis cree avec succes"),
             @ApiResponse(responseCode = "400", description = "Erreur de validation")
@@ -56,6 +55,17 @@ public class PackageController {
         return ResponseEntity.ok(packageDto);
     }
 
+    @Operation(summary = "Consulter par tracking number", description = "Rechercher un colis par son numéro de suivi ST-XXXXXXXX")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Colis trouve"),
+            @ApiResponse(responseCode = "404", description = "Colis introuvable")
+    })
+    @GetMapping("/tracking/{trackingNumber}")
+    public ResponseEntity<PackageDto> getPackageByTrackingNumber(@PathVariable String trackingNumber) {
+        PackageDto packageDto = packageService.getByTrackingNumber(trackingNumber);
+        return ResponseEntity.ok(packageDto);
+    }
+
     @Operation(summary = "Lister les colis", description = "Liste paginee de tous les colis avec tri")
     @GetMapping
     public ResponseEntity<Page<PackageDto>> getAllPackages(
@@ -63,7 +73,7 @@ public class PackageController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "packageId") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
-            ){
+    ) {
         // Bornes de pagination (protection contre les requêtes abusives - CWE-400)
         if (page < 0) {
             throw new IllegalArgumentException("Le paramètre 'page' doit être positif ou nul");

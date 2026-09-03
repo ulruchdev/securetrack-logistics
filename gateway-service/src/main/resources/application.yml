@@ -1,0 +1,118 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+
+  cloud:
+    gateway:
+      # Routes vers les 4 microservices
+      routes:
+        # ── Package Service ──────────────────────────
+        - id: package-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/packages/**
+          filters:
+            - StripPrefix=0
+
+        # ── Location Service ─────────────────────────
+        - id: location-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/locations/**, /api/sites/**, /api/checkpoints/**
+          filters:
+            - StripPrefix=0
+
+        # ── Security Checkpoint Service ──────────────
+        - id: security-checkpoint-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/checkpoints/scan/**, /api/checkpoint-logs/**
+          filters:
+            - StripPrefix=0
+
+        # ── Tracking Service ─────────────────────────
+        - id: tracking-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/tracking/**
+          filters:
+            - StripPrefix=0
+
+        # ── Swagger UI (dev only — protégé en prod) ──
+        - id: package-service-swagger
+          uri: http://localhost:8081
+          predicates:
+            - Path=/service/package/swagger-ui/**, /service/package/v3/api-docs/**
+          filters:
+            - RewritePath=/service/package/(?<segment>.*), /${segment}
+
+        - id: location-service-swagger
+          uri: http://localhost:8082
+          predicates:
+            - Path=/service/location/swagger-ui/**, /service/location/v3/api-docs/**
+          filters:
+            - RewritePath=/service/location/(?<segment>.*), /${segment}
+
+        - id: security-checkpoint-service-swagger
+          uri: http://localhost:8083
+          predicates:
+            - Path=/service/checkpoint/swagger-ui/**, /service/checkpoint/v3/api-docs/**
+          filters:
+            - RewritePath=/service/checkpoint/(?<segment>.*), /${segment}
+
+        - id: tracking-service-swagger
+          uri: http://localhost:8084
+          predicates:
+            - Path=/service/tracking/swagger-ui/**, /service/tracking/v3/api-docs/**
+          filters:
+            - RewritePath=/service/tracking/(?<segment>.*), /${segment}
+
+      # Désactiver le fallback sur les routes indisponibles
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+      # CORS
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+
+  # JWT Resource Server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # En prod : pointez vers votre IdP (Keycloak, Auth0)
+          jwk-set-uri: ${jwt.jwk-set-uri:}
+          # En dev : clé symétrique
+          secret: ${jwt.secret:}
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
+
+# ── Actuator ──
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+---
+# ── Profil dev : Swagger accessible sans JWT ──
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.cbs.logistics.gateway_service: DEBUG

@@ -10,20 +10,19 @@ import java.io.Serializable;
 public interface LocationAvailabilityPort {
 
     /**
-     * Récupère la disponibilité d'une localisation pour les checkpoints.
+     * Vérifie la disponibilité d'un checkpoint.
      *
-     * @param locationId identifiant de la localisation
-     * @return informations de la localisation (colis rattaché + disponibilité)
+     * @param checkpointId identifiant du checkpoint dans le Location Service
+     * @return informations de disponibilité du checkpoint
      * @throws com.cbs.logistics.security_checkpoint_service.exception.LocationNotFoundException
-     *         si la localisation n'existe pas
+     *         si le checkpoint n'existe pas
      * @throws com.cbs.logistics.security_checkpoint_service.exception.LocationServiceUnavailableException
      *         si le Location Service est indisponible
      */
-    LocationAvailability getLocation(String locationId);
+    CheckpointAvailability getCheckpointAvailability(Long checkpointId);
 
     /**
-     * Resultat mis en cache Redis : doit être Serializable
-     * (sérialisation Jdk par défaut du RedisCacheConfiguration).
+     * Résultat mis en cache Redis : doit être Serializable.
      */
-    record LocationAvailability(Long packageId, boolean checkpointAvailable) implements Serializable {}
+    record CheckpointAvailability(boolean active, Long siteId) implements Serializable {}
 }

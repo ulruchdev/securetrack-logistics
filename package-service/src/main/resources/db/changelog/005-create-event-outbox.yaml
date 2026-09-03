@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5-create-event-outbox
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: event_outbox
+      changes:
+        - createTable:
+            tableName: event_outbox
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: routing_key
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: published_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: retry_count
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_event_outbox_status
+            tableName: event_outbox
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_event_outbox_created_at
+            tableName: event_outbox
+            columns:
+              - column:
+                  name: created_at
