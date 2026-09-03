@@ -49,13 +49,17 @@ jobs:
 
       # La revue de code est assurée par l'application GitHub CodeRabbit (action ci-pr-reviewer retirée du marketplace)
 
-      - name: Build Docker images (4 services)
+      - name: Build Docker images (5 services)
         run: |
           docker build -t cbs-package -f package-service/Dockerfile .
           docker build -t cbs-location -f location-service/Dockerfile .
           docker build -t cbs-checkpoint -f security-checkpoint-service/Dockerfile .
           docker build -t cbs-tracking -f tracking-service/Dockerfile .
-          echo "✅ 4 images Docker buildées"
+          docker build -t cbs-gateway -f gateway-service/Dockerfile .
+          echo "✅ 5 images Docker buildées"
+
+      - name: Generate JWT secret for smoke test
+        run: echo "JWT_SECRET=$(openssl rand -base64 32)" >> $GITHUB_ENV
 
       - name: Docker Compose smoke test
         env:
@@ -63,7 +67,7 @@ jobs:
           MONGO_PASSWORD: testpassword
           REDIS_PASSWORD: testpassword
           RABBITMQ_PASSWORD: testpassword
-          JWT_SECRET: Y2JzLXRlc3Qtc2VjcmV0LWtleS1mb3ItdW5pdC10ZXN0cy4zMi1ieXRlcw==
+          JWT_SECRET: ${{ env.JWT_SECRET }}
           SECURITY_PASSWORD: testpassword
         run: |
           cp common/.env.example common/.env

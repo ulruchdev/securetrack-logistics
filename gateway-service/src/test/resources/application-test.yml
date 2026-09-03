@@ -8,7 +8,7 @@ spring:
             - Path=/api/test/**
 
 jwt:
-  secret: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=
+  secret: test-only-not-a-real-secret-placeholder-for-unit-tests
 
 server:
   port: 0
