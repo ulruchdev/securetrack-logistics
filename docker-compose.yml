@@ -1,21 +1,21 @@
 # ============================================================
-#  CBS Logistics - Docker Compose Unifié
+#  CBS Logistics - Docker Compose Unifie
 #
 #  Infrastructure : PostgreSQL + MongoDB + Redis + RabbitMQ
-#  Applications   : Package | Location | SecurityCheckpoint | Tracking
+#  Applications   : Package | Location | SecurityCheckpoint | Tracking | Gateway
 #
 #  Lancement :
 #    Infrastructure seule :  docker compose up -d
 #    Tout (infra + apps)  :  docker compose --profile full up -d
 #
-#  Secrets : variables dans .env (copier .env.example → .env)
+#  Secrets : variables dans .env (copier .env.example -> .env)
 # ============================================================
 
 services:
 
-  # ──────────────────────────────────────────────────────────
+  # ----------------------------------------------------------
   #  INFRASTRUCTURE
-  # ──────────────────────────────────────────────────────────
+  # ----------------------------------------------------------
 
   postgres:
     image: postgres:15-alpine
@@ -91,9 +91,10 @@ services:
       retries: 5
       start_period: 20s
 
-  # ──────────────────────────────────────────────────────────
+  # ----------------------------------------------------------
   #  APPLICATIONS (profil "full")
-  # ──────────────────────────────────────────────────────────
+  #  JWT_SECRET est OBLIGATOIRE : pas de fallback en dur
+  # ----------------------------------------------------------
 
   package-service:
     build:
@@ -111,7 +112,7 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-cbsuser}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD requis}
       SPRING_PROFILES_ACTIVE: docker
-      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
     depends_on:
       postgres:
         condition: service_healthy
@@ -138,7 +139,7 @@ services:
       MONGO_URI: mongodb://${MONGO_USER:-cbsuser}:${MONGO_PASSWORD:?MONGO_PASSWORD requis}@mongodb:27017/cbsdb?authSource=admin
       PACKAGE_SERVICE_URL: http://package-service:8081
       SPRING_PROFILES_ACTIVE: docker
-      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -173,7 +174,7 @@ services:
       SECURITY_PASSWORD: ${SECURITY_PASSWORD:?SECURITY_PASSWORD requis}
       SECURITY_REQUIRE_HTTPS: "false"
       SPRING_PROFILES_ACTIVE: docker
-      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
     depends_on:
       postgres:
         condition: service_healthy
@@ -209,7 +210,7 @@ services:
       SECURITY_USERNAME: ${SECURITY_USERNAME:-admin}
       SECURITY_PASSWORD: ${SECURITY_PASSWORD:?SECURITY_PASSWORD requis}
       SPRING_PROFILES_ACTIVE: docker
-      JWT_SECRET: ${JWT_SECRET:-Y2JzLWRldi1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLjMyYnl0ZXM=}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
     depends_on:
       postgres:
         condition: service_healthy
