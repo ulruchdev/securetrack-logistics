@@ -6,7 +6,7 @@ spring:
     name: security-checkpoint-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/cbsdb
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/cbsdb}
     username: ${DB_USERNAME:cbsuser}
     password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable DB_PASSWORD
     driver-class-name: org.postgresql.Driver
@@ -23,11 +23,12 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # Redis : cache de disponibilité des lieux (voir RedisCacheConfig)
+  # Redis : cache de disponibilité des checkpoints (voir RedisCacheConfig)
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
       # Désactive le scan des repositories Redis (nos entités sont JPA, pas RedisHash)
       repositories:
         enabled: false
@@ -46,52 +47,14 @@ feign:
         readTimeout: 10000
         loggerLevel: basic
 
-# Identifiants du compte d'administration (surchargables via variables d'environnement)
-security:
-  checkpoint:
-    username: ${SECURITY_USERNAME:admin}
-    password: ${SECURITY_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable SECURITY_PASSWORD
-    require-https: ${SECURITY_REQUIRE_HTTPS:true}    # Sécurité par défaut : force HTTPS hors dev (surcharge false en local)
+# JWT Resource Server
+jwt:
+  secret: ${JWT_SECRET}
 
 # URL du Location Service (surchargeable par variable d'environnement LOCATION_SERVICE_URL)
 location-service:
   url: ${LOCATION_SERVICE_URL:http://localhost:8082}
 
-
-# Résilience : CircuitBreaker + Retry sur l'appel à LocationService
-# (les timeouts Feign connect/read ci-dessus bornent chaque requête ;
-#  le circuit breaker coupe le flux dès que le service distant est en panne)
-resilience4j:
-  circuitbreaker:
-    instances:
-      locationService:
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        waitDurationInOpenState: 10s
-        failureRateThreshold: 50
-  retry:
-    instances:
-      locationService:
-        maxAttempts: 3
-        waitDuration: 500ms
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
-        retryExceptions:
-          - java.io.IOException
-          - java.util.concurrent.TimeoutException
-          - feign.RetryableException
-          - com.cbs.logistics.security_checkpoint_service.exception.LocationServiceUnavailableException
-
-# Actuator : monitoring des circuit breakers
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,circuitbreakers,circuitbreakerevents
-  endpoint:
-    circuitbreakers:
-      enabled: true
-    circuitbreakerevents:
-      enabled: true
+# URL du Package Service (surchargeable par variable d'environnement PACKAGE_SERVICE_URL)
+package-service:
+  url: ${PACKAGE_SERVICE_URL:http://localhost:8081}

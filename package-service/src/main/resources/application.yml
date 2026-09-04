@@ -25,8 +25,12 @@ spring:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:cbsuser}
-    password: ${RABBITMQ_PASSWORD:guest}
+    password: ${RABBITMQ_PASSWORD}
 
 logging:
   level:
     com.cbs.logistics.package_service: INFO
+# ── JWT Resource Server ──
+jwt:
+  secret: ${JWT_SECRET}
+  # En prod, utiliser jwt.jwk-set-uri: https://idp.example.com/realms/cbs/protocol/openid-connect/certs

@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import java.util.List;
 
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PackageController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class PackageControllerTest {
 
     @Autowired
@@ -49,7 +51,7 @@ class PackageControllerTest {
             """;
 
     private PackageDto dto() {
-        return new PackageDto(1L, "Colis fragile", "Colis test", "STANDARD", 2.5, true, "NEW");
+        return new PackageDto(1L, "ST-ABCDEF12", "Colis fragile", "Colis test", "STANDARD", 2.5, true, "NEW");
     }
 
     @Test
@@ -189,7 +191,7 @@ class PackageControllerTest {
     @Test
     void updatePackage_shouldReturn200() throws Exception {
         // Le service retourne le DTO après application de l'update (statut IN_TRANSIT)
-        PackageDto updatedDto = new PackageDto(1L, "Colis fragile", "Colis test", "STANDARD", 2.5, true, "IN_TRANSIT");
+        PackageDto updatedDto = new PackageDto(1L, "ST-ABCDEF12", "Colis fragile", "Colis test", "STANDARD", 2.5, true, "IN_TRANSIT");
         when(packageService.update(eq(1L), any(UpdatePackageRequest.class))).thenReturn(updatedDto);
 
         mockMvc.perform(patch("/api/packages/1")

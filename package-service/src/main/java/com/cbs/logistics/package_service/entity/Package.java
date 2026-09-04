@@ -5,20 +5,28 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Entity
 @Table
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-
 public class Package {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long packageId;
+
+    @Column(nullable = false)
+    private String tenantId;
 
     /** Verrou optimiste : incrémenté à chaque UPDATE, détecte les modifications concurrentes. */
     @Version
     private Long version;
+
+    /** Tracking number unique par tenant : format ST-XXXXXXXX (8 alphanumériques). */
+    @Column(nullable = false, unique = true)
+    private String trackingNumber;
 
     @Column
     private String description;
@@ -36,4 +44,7 @@ public class Package {
     @Column
     private String locationId;
 
+    /** Soft delete : timestamp de suppression logique (null = actif). */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 }

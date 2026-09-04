@@ -1,65 +1,45 @@
 package com.cbs.logistics.tracking_service.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.cbs.logistics.common.security.filter.TenantFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Sécurité Basic Auth pour le Tracking Service.
+ * Sécurité JWT Resource Server pour le Tracking Service.
  *
- * <p>Protège tous les endpoints sauf /actuator/health et /swagger-ui.
- * Identique au pattern utilisé par security-checkpoint-service.</p>
- *
- * <p>Configuration via variables d'environnement :</p>
- * <ul>
- *   <li>SECURITY_USERNAME (défaut: admin)</li>
- *   <li>SECURITY_PASSWORD (obligatoire)</li>
- * </ul>
+ * <p>Remplace l'ancienne Basic Auth in-memory par un validateur JWT
+ * fourni par le module common-security.</p>
  */
 @EnableWebSecurity
 @Configuration
 public class SecurityConfig {
 
-    @Value("${security.tracking.username:admin}")
-    private String username;
+    private final TenantFilter tenantFilter;
 
-    @Value("${security.tracking.password}")
-    private String password;
+    public SecurityConfig(TenantFilter tenantFilter) {
+        this.tenantFilter = tenantFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf.disable())
-                .httpBasic(httpBasic -> {});
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> {})
+                )
+                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public InMemoryUserDetailsManager userDetailsService() {
-        UserDetails admin = User.builder()
-                .username(username)
-                .password(passwordEncoder().encode(password))
-                .roles("TRACKING_OPERATOR")
-                .build();
-
-        return new InMemoryUserDetailsManager(admin);
     }
 }

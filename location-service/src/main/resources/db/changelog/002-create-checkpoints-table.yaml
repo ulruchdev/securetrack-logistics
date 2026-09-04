@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2-create-checkpoints-table
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: checkpoints
+      changes:
+        - createTable:
+            tableName: checkpoints
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_checkpoint_site
+                    references: sites(id)
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: checkpoints
+            indexName: idx_checkpoints_tenant_id
+            columns:
+              - column:
+                  name: tenant_id
+        - createIndex:
+            tableName: checkpoints
+            indexName: idx_checkpoints_site_id
+            columns:
+              - column:
+                  name: site_id

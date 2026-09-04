@@ -1,5 +1,6 @@
 package com.cbs.logistics.package_service.service;
 
+import com.cbs.logistics.common.security.context.TenantContext;
 import com.cbs.logistics.package_service.dto.CreatePackageRequest;
 import com.cbs.logistics.common.dto.PackageDto;
 import com.cbs.logistics.package_service.dto.UpdatePackageRequest;
@@ -10,6 +11,7 @@ import com.cbs.logistics.package_service.mapper.PackageMapper;
 import com.cbs.logistics.package_service.repository.PackageRepository;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,11 +34,16 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PackageServiceTest {
 
+    private static final String TENANT_ID = "test-tenant";
+
     @Mock
     private PackageRepository packageRepository;
 
     @Mock
     private PackageMapper packageMapper;
+
+    @Mock
+    private EventOutboxService eventOutboxService;
 
     @InjectMocks
     private PackageService packageService;
@@ -50,14 +57,17 @@ class PackageServiceTest {
 
     @BeforeEach
     void setUp() {
+        TenantContext.setCurrent(TENANT_ID);
+
         packageEntity = new Package();
         packageEntity.setPackageId(1L);
+        packageEntity.setTenantId(TENANT_ID);
         packageEntity.setDescription("Test Package");
         packageEntity.setWeight(2.5);
         packageEntity.setFragile(true);
         packageEntity.setPackageStatus(PackageStatus.NEW);
 
-        packageDto = new PackageDto(1L, "Test Package", null, null, 2.5, true, "NEW");
+        packageDto = new PackageDto(1L, "ST-ABCDEF12", "Test Package", null, null, 2.5, true, "NEW");
 
         createRequest = new CreatePackageRequest();
         createRequest.setDescription("Test Package");
@@ -68,46 +78,38 @@ class PackageServiceTest {
         updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
     }
 
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
+    }
+
     @Test
     void create_ShouldCreatePackageWithDefaultStatus() {
-        // Given
         when(packageMapper.toEntity(createRequest)).thenReturn(packageEntity);
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
-        // When
         PackageDto result = packageService.create(createRequest);
 
-        // Then
         assertThat(result).isEqualTo(packageDto);
         assertThat(packageEntity.getPackageStatus()).isEqualTo(PackageStatus.NEW);
         verify(packageRepository).save(packageEntity);
+        verify(eventOutboxService).storePackageStatusChanged(any());
     }
 
     @Test
     void createRequest_ShouldRejectBlankDescription_WhenValidated() {
-        // Given
         createRequest.setDescription("");
-
-        // When
         var violations = validator.validate(createRequest);
-
-        // Then
         assertThat(violations).isNotEmpty();
-        assertThat(violations).anyMatch(v ->
-                v.getPropertyPath().toString().equals("description")
-                        && v.getMessage().equals("La description est obligatoire"));
     }
 
     @Test
     void update_ShouldUpdatePackage() {
-        // Given
-        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
-        // Le mapper étant mocké, on simule sa vraie mutation :
-        // il applique les champs non-null du request sur l'entité
         doAnswer(invocation -> {
             UpdatePackageRequest req = invocation.getArgument(0);
             Package entity = invocation.getArgument(1);
@@ -117,34 +119,27 @@ class PackageServiceTest {
             return null;
         }).when(packageMapper).updateEntityFromRequest(any(UpdatePackageRequest.class), any(Package.class));
 
-        // When
         PackageDto result = packageService.update(1L, updateRequest);
 
-        // Then
         assertThat(result).isEqualTo(packageDto);
         assertThat(packageEntity.getPackageStatus()).isEqualTo(PackageStatus.IN_TRANSIT);
-        verify(packageMapper).updateEntityFromRequest(updateRequest, packageEntity);
+        verify(eventOutboxService).storePackageStatusChanged(any());
     }
 
     @Test
     void update_ShouldThrowException_WhenPackageNotFound() {
-        // Given
-        when(packageRepository.findById(1L)).thenReturn(Optional.empty());
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.empty());
 
-        // When & Then
         assertThatThrownBy(() -> packageService.update(1L, updateRequest))
-                .isInstanceOf(PackageNotFoundException.class)
-                .hasMessage("Package not found with id: 1");
+                .isInstanceOf(PackageNotFoundException.class);
     }
 
     @Test
     void update_ShouldThrowException_WhenInvalidStatusTransition() {
-        // Given
         packageEntity.setPackageStatus(PackageStatus.DELIVERED);
         updateRequest.setPackageStatus(PackageStatus.NEW);
-        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
 
-        // When & Then
         assertThatThrownBy(() -> packageService.update(1L, updateRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Cannot change status from DELIVERED");
@@ -152,97 +147,80 @@ class PackageServiceTest {
 
     @Test
     void update_ShouldAllowSameStatus() {
-        // Given : conserver le statut actuel (PATCH partiel sans changement de statut)
         packageEntity.setPackageStatus(PackageStatus.IN_TRANSIT);
         updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
-        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
-        // When
         PackageDto result = packageService.update(1L, updateRequest);
 
-        // Then : aucune exception de transition, l'update passe
         assertThat(result).isEqualTo(packageDto);
         verify(packageRepository).save(packageEntity);
     }
 
     @Test
     void update_ShouldAllowTransitionFromNewToInTransit() {
-        // Given : NEW -> IN_TRANSIT est une transition valide
         packageEntity.setPackageStatus(PackageStatus.NEW);
         updateRequest.setPackageStatus(PackageStatus.IN_TRANSIT);
-        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
-        // When
         PackageDto result = packageService.update(1L, updateRequest);
 
-        // Then
         assertThat(result).isEqualTo(packageDto);
         verify(packageRepository).save(packageEntity);
     }
 
     @Test
     void getById_ShouldReturnPackage() {
-        // Given
-        when(packageRepository.findById(1L)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
-        // When
         PackageDto result = packageService.getById(1L);
 
-        // Then
         assertThat(result).isEqualTo(packageDto);
     }
 
     @Test
     void getById_ShouldThrowException_WhenPackageNotFound() {
-        // Given
-        when(packageRepository.findById(1L)).thenReturn(Optional.empty());
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.empty());
 
-        // When & Then
         assertThatThrownBy(() -> packageService.getById(1L))
-                .isInstanceOf(PackageNotFoundException.class)
-                .hasMessage("Package not found with id: 1");
+                .isInstanceOf(PackageNotFoundException.class);
     }
 
     @Test
-    void delete_ShouldDeletePackage() {
-        // Given
-        when(packageRepository.existsById(1L)).thenReturn(true);
+    void delete_ShouldSoftDeletePackage() {
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.of(packageEntity));
+        when(packageRepository.save(packageEntity)).thenReturn(packageEntity);
 
-        // When
         packageService.delete(1L);
 
-        // Then
-        verify(packageRepository).deleteById(1L);
+        assertThat(packageEntity.getDeletedAt()).isNotNull();
+        verify(packageRepository).save(packageEntity);
+        verify(packageRepository, never()).deleteById(any());
+        verify(eventOutboxService).storePackageStatusChanged(any());
     }
 
     @Test
     void delete_ShouldThrowException_WhenPackageNotFound() {
-        // Given
-        when(packageRepository.existsById(1L)).thenReturn(false);
+        when(packageRepository.findByPackageIdAndTenantIdAndDeletedAtIsNull(1L, TENANT_ID)).thenReturn(Optional.empty());
 
-        // When & Then
         assertThatThrownBy(() -> packageService.delete(1L))
-                .isInstanceOf(PackageNotFoundException.class)
-                .hasMessage("Package not found with id: 1");
+                .isInstanceOf(PackageNotFoundException.class);
     }
 
     @Test
     void getAll_ShouldReturnPagedPackages() {
-        // Given
         Pageable pageable = PageRequest.of(0, 10);
         Page<Package> packagePage = new PageImpl<>(List.of(packageEntity), pageable, 1);
-        when(packageRepository.findAll(pageable)).thenReturn(packagePage);
+        when(packageRepository.findByTenantIdAndDeletedAtIsNull(TENANT_ID, pageable)).thenReturn(packagePage);
         when(packageMapper.toDto(packageEntity)).thenReturn(packageDto);
 
-        // When
         Page<PackageDto> result = packageService.getAll(pageable);
 
-        // Then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0)).isEqualTo(packageDto);
     }

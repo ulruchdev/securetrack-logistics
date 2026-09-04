@@ -1,4 +1,5 @@
 package com.cbs.logistics.location_service.service;
+import com.cbs.logistics.common.security.context.TenantContext;
 
 import com.cbs.logistics.location_service.client.PackageServiceClient;
 import com.cbs.logistics.location_service.dto.CreateLocationRequest;
@@ -54,6 +55,7 @@ class LocationServiceTest {
 
     @BeforeEach
     void setUp() {
+        TenantContext.setCurrent("test-tenant");
         location = Location.builder()
                 .locationId("loc-1")
                 .packageId(1L)
@@ -70,7 +72,7 @@ class LocationServiceTest {
         createRequest.setZone("ZONE_A");
         createRequest.setCheckpointAvailable(true);
 
-        packageDto = new PackageDto(1L, "Colis test", "Colis", "STANDARD", 2.5, false, "NEW");
+        packageDto = new PackageDto(1L, "ST-ABCDEF12", "Colis test", "Colis", "STANDARD", 2.5, false, "NEW");
     }
 
     @Test
@@ -112,7 +114,7 @@ class LocationServiceTest {
 
     @Test
     void getById_shouldReturnLocation() {
-        when(locationRepository.findById("loc-1")).thenReturn(Optional.of(location));
+        when(locationRepository.findByLocationIdAndTenantId("loc-1", "test-tenant")).thenReturn(Optional.of(location));
         when(locationMapper.toDto(location)).thenReturn(locationDto);
 
         LocationDto result = locationService.getById("loc-1");
@@ -122,7 +124,7 @@ class LocationServiceTest {
 
     @Test
     void getById_shouldThrow_whenLocationNotFound() {
-        when(locationRepository.findById("loc-1")).thenReturn(Optional.empty());
+        when(locationRepository.findByLocationIdAndTenantId("loc-1", "test-tenant")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> locationService.getById("loc-1"))
                 .isInstanceOf(LocationNotFoundException.class);
@@ -132,7 +134,7 @@ class LocationServiceTest {
     void getAll_shouldReturnPagedLocations() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Location> page = new PageImpl<>(List.of(location), pageable, 1);
-        when(locationRepository.findAll(pageable)).thenReturn(page);
+        when(locationRepository.findByTenantId("test-tenant", pageable)).thenReturn(page);
         when(locationMapper.toDto(location)).thenReturn(locationDto);
 
         Page<LocationDto> result = locationService.getAll(pageable);
@@ -143,7 +145,7 @@ class LocationServiceTest {
 
     @Test
     void getByPackageId_shouldReturnEnrichedLocation() {
-        when(locationRepository.findByPackageId(1L)).thenReturn(Optional.of(location));
+        when(locationRepository.findByPackageIdAndTenantId(1L, "test-tenant")).thenReturn(Optional.of(location));
         when(locationMapper.toDto(location)).thenReturn(locationDto);
         when(packageServiceClient.getPackageById(1L)).thenReturn(packageDto);
 
@@ -155,7 +157,7 @@ class LocationServiceTest {
 
     @Test
     void getByPackageId_shouldThrow_whenLocationNotFound() {
-        when(locationRepository.findByPackageId(1L)).thenReturn(Optional.empty());
+        when(locationRepository.findByPackageIdAndTenantId(1L, "test-tenant")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> locationService.getByPackageId(1L))
                 .isInstanceOf(LocationNotFoundException.class);

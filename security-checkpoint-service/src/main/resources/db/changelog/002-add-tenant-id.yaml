@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2-add-tenant-id
+      author: cbs-logistics
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: checkpoint_logs
+        - not:
+            - columnExists:
+                tableName: checkpoint_logs
+                columnName: tenant_id
+      changes:
+        - addColumn:
+            tableName: checkpoint_logs
+            columns:
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  defaultValue: 'default'
+        - addDefaultValue:
+            tableName: checkpoint_logs
+            columnName: tenant_id
+            defaultValue: 'default'
+        - sql:
+            sql: ALTER TABLE checkpoint_logs ALTER COLUMN tenant_id SET NOT NULL
+        - createIndex:
+            tableName: checkpoint_logs
+            indexName: idx_checkpoint_tenant_id
+            columns:
+              - column:
+                  name: tenant_id

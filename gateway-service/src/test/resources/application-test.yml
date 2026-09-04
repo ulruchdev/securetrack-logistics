@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: test-route
+          uri: http://localhost:19999
+          predicates:
+            - Path=/api/test/**
+
+jwt:
+  secret: test-only-not-a-real-secret-placeholder-for-unit-tests
+
+server:
+  port: 0
+
+logging:
+  level:
+    org.springframework.cloud.gateway: WARN
+    com.cbs.logistics.gateway_service: WARN

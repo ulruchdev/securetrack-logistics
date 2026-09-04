@@ -14,8 +14,8 @@ class CheckpointLogTest {
     @Test
     void onCreate_shouldSetCheckpointTime_whenNull() {
         CheckpointLog log = CheckpointLog.builder()
-                .packageId(1L)
-                .locationId("loc-1")
+                .trackingNumber("ST-ABCDEF12")
+                .checkpointId(10L)
                 .result(CheckpointResult.OK)
                 .build();
 
@@ -31,8 +31,8 @@ class CheckpointLogTest {
     void onCreate_shouldKeepCheckpointTime_whenAlreadySet() {
         LocalDateTime fixed = LocalDateTime.of(2026, 8, 10, 10, 0);
         CheckpointLog log = CheckpointLog.builder()
-                .packageId(1L)
-                .locationId("loc-1")
+                .trackingNumber("ST-ABCDEF12")
+                .checkpointId(10L)
                 .checkpointTime(fixed)
                 .result(CheckpointResult.OK)
                 .build();
