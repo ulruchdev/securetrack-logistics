@@ -8,7 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 
 /**
  * Sécurité JWT Resource Server pour le Tracking Service.
@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {})
                 )
-                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterAfter(tenantFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();
     }
