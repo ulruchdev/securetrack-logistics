@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # =============================================================
-#  CBS Logistics - Exécution de toute la suite de tests API
+#  CBS Logistics - Execution de toute la suite de tests API
 #  Usage : bash run-all.sh
 # =============================================================
 set -uo pipefail
-cd -- "$(dirname "$0")" || { echo "ERREUR : impossible de changer de répertoire" >&2; exit 1; }
+cd -- "$(dirname "$0")" || { echo "ERREUR : impossible de changer de repertoire" >&2; exit 1; }
 
 OK=0
 KO=0
+TOTAL=0
 
-for script in test-package-service.sh test-location-service.sh test-security-checkpoint-service.sh; do
+for script in test-package-service.sh test-location-service.sh test-security-checkpoint-service.sh test-gateway-flow.sh; do
+  TOTAL=$((TOTAL+1))
   echo
   echo "########################################################"
   echo "###  $script"
@@ -23,6 +25,6 @@ done
 
 echo
 echo "========================================================"
-echo "  SUITE COMPLETE : $OK/3 scripts OK, $KO/3 en echec"
+echo "  SUITE COMPLETE : $OK/$TOTAL scripts OK, $KO/$TOTAL en echec"
 echo "========================================================"
 [ "$KO" -eq 0 ]
