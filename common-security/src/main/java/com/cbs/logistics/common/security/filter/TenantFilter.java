@@ -7,18 +7,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Base64;
 
 /**
  * Filtre qui extrait le {@code tenant_id} du JWT et le place
- * dans le {@link TenantContext} pour la durée de la requête.
+ * dans le {@link TenantContext} pour la duree de la requete.
  *
- * <p>Lit le header {@code Authorization: Bearer <token>} et décode
- * le payload du JWT directement (sans vérifier la signature, car
- * {@code BearerTokenAuthenticationFilter} l'a déjà fait en amont).</p>
+ * <p>Ce filre s'execute APRES la validation JWT par Spring Security
+ * ({@code BearerTokenAuthenticationFilter}). Il lit le claim
+ * {@code tenant_id} depuis le {@code Jwt} deja valide dans le
+ * {@code SecurityContextHolder}.</p>
+ *
+ * <p>Si le claim {@code tenant_id} est absent ou vide, la requete
+ * est rejetee avec un probleme RFC 7807 (400).</p>
  */
 public class TenantFilter extends OncePerRequestFilter {
 
@@ -32,13 +38,25 @@ public class TenantFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
-                String tenantId = extractTenantFromJwt(token);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+                String tenantId = jwt.getClaimAsString(CLAIM_TENANT);
                 if (tenantId != null && !tenantId.isBlank()) {
                     TenantContext.setCurrent(tenantId);
-                    log.debug("Tenant résolu: {}", tenantId);
+                    log.debug("Tenant resolu: {}", tenantId);
+                } else {
+                    log.warn("JWT sans claim tenant_id - requete: {}", request.getRequestURI());
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.setContentType("application/problem+json");
+                    response.getWriter().write("""
+                            {
+                              "type": "about:blank",
+                              "title": "Bad Request",
+                              "status": 400,
+                              "detail": "Le claim tenant_id est requis dans le token JWT."
+                            }
+                            """);
+                    return;
                 }
             }
             filterChain.doFilter(request, response);
@@ -48,48 +66,7 @@ public class TenantFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Extrait le claim {@code tenant_id} du payload JWT sans vérification
-     * de signature (déjà effectuée par Spring Security en amont).
-     */
-    private String extractTenantFromJwt(String token) {
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return null;
-
-            // Décoder le payload (partie base64url)
-            String payloadB64 = parts[1];
-            // Ajouter le padding manquant
-            int padding = 4 - (payloadB64.length() % 4);
-            if (padding != 4) {
-                payloadB64 += "=".repeat(padding);
-            }
-            byte[] decoded = Base64.getUrlDecoder().decode(payloadB64);
-            String payload = new String(decoded);
-
-            // Extraction simple du claim tenant_id via recherche de chaîne
-            // (évite une dépendance Jackson pour un seul champ)
-            int idx = payload.indexOf("\"" + CLAIM_TENANT + "\"");
-            if (idx < 0) return null;
-
-            // Trouver le début de la valeur (après le ':')
-            int colonIdx = payload.indexOf(':', idx);
-            if (colonIdx < 0) return null;
-
-            int start = payload.indexOf('"', colonIdx + 1);
-            if (start < 0) return null;
-
-            int end = payload.indexOf('"', start + 1);
-            if (end < 0) return null;
-
-            return payload.substring(start + 1, end);
-        } catch (Exception e) {
-            log.warn("Impossible d'extraire tenant_id du JWT: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Ne s'exécute que pour les requêtes authentifiées (pas health, swagger).
+     * Ne s'execute que pour les requetes authentifiees (pas health, swagger).
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

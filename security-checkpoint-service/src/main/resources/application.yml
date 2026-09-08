@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5433/cbsdb}
     username: ${DB_USERNAME:cbsuser}
-    password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de démarrer sans la variable DB_PASSWORD
+    password: ${DB_PASSWORD}   # OBLIGATOIRE : le service refuse de demarrer sans la variable DB_PASSWORD
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -16,20 +16,20 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none   # Le schéma est géré par Liquibase (db/changelog/db.changelog-master.yaml)
+      ddl-auto: none   # Le schema est gere par Liquibase (db/changelog/db.changelog-master.yaml)
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # Redis : cache de disponibilité des checkpoints (voir RedisCacheConfig)
+  # Redis : cache de disponibilite des checkpoints (voir RedisCacheConfig)
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD}
-      # Désactive le scan des repositories Redis (nos entités sont JPA, pas RedisHash)
+      # Desactive le scan des repositories Redis (nos entites sont JPA, pas RedisHash)
       repositories:
         enabled: false
 
@@ -46,6 +46,40 @@ feign:
         connectTimeout: 5000
         readTimeout: 10000
         loggerLevel: basic
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      locationService:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+  retry:
+    instances:
+      locationService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - feign.RetryableException
+          - com.cbs.logistics.security_checkpoint_service.exception.LocationServiceUnavailableException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents
+  endpoint:
+    circuitbreakers:
+      enabled: true
+    circuitbreakerevents:
+      enabled: true
 
 # JWT Resource Server
 jwt:

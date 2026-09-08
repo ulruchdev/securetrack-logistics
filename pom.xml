@@ -143,7 +143,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <!-- Classes hors périmètre du seuil ET du rapport : main() Spring Boot, implémentations
                      MapStruct générées, configs infra sans logique métier (Feign/OpenAPI).
-                     SecurityConfig n'est PAS exclue : la sécurité compte dans la couverture. -->
+                     SecurityConfig est exclue (config infra). SiteController et CheckpointController sont inclus. -->
                 <configuration>
                     <excludes>
                         <exclude>**/*Application.class</exclude>
@@ -155,8 +155,6 @@
                         <exclude>**/RabbitMQConfig.class</exclude>
                         <exclude>**/SecurityConfig.class</exclude>
                         <exclude>**/dto/*.class</exclude>
-                        <exclude>**/controller/SiteController.class</exclude>
-                        <exclude>**/controller/CheckpointController.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

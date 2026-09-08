@@ -36,7 +36,7 @@ public class JwtConfig {
         }
         if (secret != null && !secret.isBlank()) {
             // Clé symétrique HMACSHA256 en base64
-            byte[] keyBytes = Base64.getEncoder().encode(secret.getBytes());
+            byte[] keyBytes = Base64.getDecoder().decode(secret);
             SecretKey key = new SecretKeySpec(keyBytes, "HMACSHA256");
             return NimbusJwtDecoder.withSecretKey(key).build();
         }
