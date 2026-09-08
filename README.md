@@ -197,4 +197,4 @@ mvn clean verify
 
 Vision, correctifs backend et architecture frontend (web + mobile) :
 
-- [`docs/produit/README.md`](docs/produit/README.md) — sur la branche `docs-produit`
+- [`docs/produit/README.md`](docs/produit/README.md)
